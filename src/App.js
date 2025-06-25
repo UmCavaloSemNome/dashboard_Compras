@@ -6,6 +6,8 @@ const XIcon = ({ className }) => (<svg className={className} xmlns="http://www.w
 const PencilIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>);
 const TrashIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><polyline points="10 11 10 17"></polyline><polyline points="14 11 14 17"></polyline></svg>);
 const GoogleIcon = () => (<svg viewBox="0 0 48 48" width="24px" height="24px"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C44.438,36.338,48,31,48,24C48,22.659,47.862,21.35,47.611,20.083z"></path></svg>);
+const WandIcon = ({className}) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 4V2m0 14V4m0 12h-2m5-11l-1-1m-10 0l-1 1m5 16l-2-2m-8-6H2m4 0h2m10 0h2M7 5l-1-1M7 19l-1 1m10-14l1-1m-1 14l1 1m-4-8a2 2 0 0 0-2-2 2 2 0 0 0-2 2 2 2 0 0 0 2 2 2 2 0 0 0 2-2Z"/></svg>)
+
 
 // --- Componente Principal: App ---
 export default function App() {
@@ -27,6 +29,8 @@ export default function App() {
     
     // Configurações da Planilha
     const [config, setConfig] = useState({ clientId: '', spreadsheetId: '', sheetName: '' });
+    const [isPreparingSheet, setIsPreparingSheet] = useState(false);
+
 
     // Carrega o Google Sign-In (GSI)
     useEffect(() => {
@@ -57,30 +61,75 @@ export default function App() {
                             gapi.client.setToken(tokenResponse);
                             await gapi.client.load('sheets', 'v4');
                             setIsLoggedIn(true);
-                            setIsConfigModalOpen(false);
-                            fetchSheetData();
                         }
                     },
                 });
                 setTokenClient(client);
-            } catch (err) {
-                console.error("Erro ao inicializar cliente Google:", err);
-                setError("Falha ao inicializar a autenticação do Google. Verifique o Client ID.")
-            }
+            } catch (err) { console.error("Erro ao inicializar cliente Google:", err); }
         }
     }, [gapi, google, config.clientId]);
 
-    const handleLogin = () => tokenClient ? tokenClient.requestAccessToken() : setError("Cliente de autenticação não está pronto.");
+    const handleLogin = () => tokenClient && tokenClient.requestAccessToken();
     const handleConfigSave = (newConfig) => setConfig(newConfig);
+
+    const handlePrepareSheet = async () => {
+        setIsPreparingSheet(true);
+        setError(null);
+        try {
+            const range = `${config.sheetName}!A:L`;
+            const response = await gapi.client.sheets.spreadsheets.values.get({
+                spreadsheetId: config.spreadsheetId, range: range,
+            });
+            
+            const rows = response.result.values || [];
+            if (rows.length < 2) {
+                setError("Planilha vazia. Nada a preparar.");
+                setIsPreparingSheet(false);
+                return;
+            }
+
+            const header = rows[0].map(h => h.toLowerCase().trim());
+            const idColIndex = header.indexOf('id_unico');
+            if (idColIndex === -1) throw new Error('A coluna "ID_UNICO" não foi encontrada.');
+
+            let idColValues = [["ID_UNICO"]]; // Começa com o cabeçalho
+            let needsUpdate = false;
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                let currentId = row[idColIndex];
+                if (!currentId && row[0]) { // Se não tem ID, mas tem nome do produto
+                    currentId = `compra-${Date.now()}-${i}`;
+                    needsUpdate = true;
+                }
+                idColValues.push([currentId || '']);
+            }
+            
+            if (needsUpdate) {
+                const idColLetter = String.fromCharCode('A'.charCodeAt(0) + idColIndex);
+                const updateRange = `${config.sheetName}!${idColLetter}1`;
+                await gapi.client.sheets.spreadsheets.values.update({
+                    spreadsheetId: config.spreadsheetId, range: updateRange,
+                    valueInputOption: 'RAW', resource: { values: idColValues },
+                });
+            }
+
+            setIsConfigModalOpen(false);
+            await fetchSheetData();
+
+        } catch (err) {
+            const errorMessage = err.result?.error?.message || err.message || 'Um erro desconhecido ocorreu.';
+            setError(`Erro ao preparar planilha: ${errorMessage}`);
+        }
+        setIsPreparingSheet(false);
+    }
 
     const fetchSheetData = async () => {
         setIsLoading(true);
         setError(null);
         try {
-            const range = `${config.sheetName}!A:L`; // Lê até a coluna L para pegar o ID
+            const range = `${config.sheetName}!A:L`;
             const response = await gapi.client.sheets.spreadsheets.values.get({
-                spreadsheetId: config.spreadsheetId,
-                range: range,
+                spreadsheetId: config.spreadsheetId, range: range,
             });
             
             const rows = response.result.values || [];
@@ -88,14 +137,10 @@ export default function App() {
                 const header = rows[0].map(h => h.toLowerCase().trim());
                 const idColIndex = header.indexOf('id_unico');
                 
-                if (idColIndex === -1) {
-                     throw new Error('A coluna "ID_UNICO" não foi encontrada. Verifique se ela existe na sua planilha.');
-                }
+                if (idColIndex === -1) throw new Error('A coluna "ID_UNICO" não foi encontrada.');
                 
                 const data = rows.slice(1).map((row, index) => ({
-                    rowIndex: index + 2,
-                    id: row[idColIndex],
-                    fullRow: row, // Salva a linha inteira para preservar os dados
+                    rowIndex: index + 2, id: row[idColIndex], fullRow: row,
                     nome: row[0] || '',
                     preco: parseFloat((row[3] || '0').toString().replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) || 0,
                     fornecedor: row[5] || '',
@@ -103,17 +148,13 @@ export default function App() {
                 })).filter(c => c.id && c.nome);
                 
                 setCompras(data);
-                if (data.length === 0) {
-                    setError("Conectado! Nenhuma linha com dados válidos (com ID e Nome) foi encontrada na planilha.");
-                }
-
+                if (data.length === 0) setError("Planilha pronta! Nenhuma linha com dados válidos (com ID e Nome) foi encontrada.");
             } else {
-                 setError("Conectado! A planilha ou a aba selecionada parecem estar vazias.");
+                 setError("Planilha pronta! A aba selecionada parece estar vazia.");
             }
         } catch (err) {
             const errorMessage = err.result?.error?.message || err.message || 'Um erro desconhecido ocorreu.';
             setError(`Erro ao carregar dados: ${errorMessage}`);
-            console.error(err);
         }
         setIsLoading(false);
     };
@@ -121,14 +162,8 @@ export default function App() {
     const handleAdd = async (newPurchase) => {
         setIsLoading(true);
         const newId = `compra-${Date.now()}`;
-        // Cria uma nova linha com 12 colunas para corresponder A:L
         const newRow = Array(12).fill('');
-        newRow[0] = newPurchase.nome;
-        newRow[3] = newPurchase.preco;
-        newRow[5] = newPurchase.fornecedor;
-        newRow[10] = newPurchase.status;
-        newRow[11] = newId;
-
+        newRow[0] = newPurchase.nome; newRow[3] = newPurchase.preco; newRow[5] = newPurchase.fornecedor; newRow[10] = newPurchase.status; newRow[11] = newId;
         try {
             await gapi.client.sheets.spreadsheets.values.append({
                 spreadsheetId: config.spreadsheetId, range: `${config.sheetName}!A:L`,
@@ -136,7 +171,7 @@ export default function App() {
             });
             await fetchSheetData();
             setIsAddModalOpen(false);
-        } catch(err) { setError("Falha ao adicionar a nova compra."); console.error(err); }
+        } catch(err) { setError("Falha ao adicionar a nova compra."); }
         setIsLoading(false);
     }
 
@@ -144,22 +179,9 @@ export default function App() {
         const item = compras.find(c => c.id === id);
         if(!item) return;
         setIsLoading(true);
-
-        // Cria uma cópia da linha original para preservar todas as colunas
         const updatedRow = [...item.fullRow];
-        // Garante que a linha tenha o tamanho correto, preenchendo com strings vazias se necessário
-        while(updatedRow.length < 12) {
-            updatedRow.push('');
-        }
-
-        // Atualiza apenas as colunas que são editáveis no formulário
-        updatedRow[0] = updatedPurchase.nome;
-        updatedRow[3] = updatedPurchase.preco;
-        updatedRow[5] = updatedPurchase.fornecedor;
-        updatedRow[10] = updatedPurchase.status;
-        // O ID (coluna L / índice 11) não deve ser alterado
-        updatedRow[11] = id;
-
+        while(updatedRow.length < 12) { updatedRow.push(''); }
+        updatedRow[0] = updatedPurchase.nome; updatedRow[3] = updatedPurchase.preco; updatedRow[5] = updatedPurchase.fornecedor; updatedRow[10] = updatedPurchase.status; updatedRow[11] = id;
         try {
             const range = `${config.sheetName}!A${item.rowIndex}:L${item.rowIndex}`;
             await gapi.client.sheets.spreadsheets.values.update({
@@ -168,7 +190,7 @@ export default function App() {
             });
             await fetchSheetData();
             setIsEditModalOpen(false);
-        } catch(err) { setError("Falha ao editar a compra."); console.error(err); }
+        } catch(err) { setError("Falha ao editar a compra.");}
         setIsLoading(false);
     }
 
@@ -184,20 +206,17 @@ export default function App() {
 
             await gapi.client.sheets.spreadsheets.batchUpdate({
                 spreadsheetId: config.spreadsheetId,
-                resource: { requests: [{ deleteDimension: { range: { sheetId: sheetId,
-                                                                     dimension: 'ROWS', 
-                                                                     startIndex: item.rowIndex - 1, 
-                                                                     endIndex: item.rowIndex } } }] }
+                resource: { requests: [{ deleteDimension: { range: { sheetId: sheetId, dimension: 'ROWS', startIndex: item.rowIndex - 1, endIndex: item.rowIndex } } }] }
             });
             await fetchSheetData();
             setIsDeleteModalOpen(false);
-        } catch(err) { setError("Falha ao deletar a compra."); console.error(err); }
+        } catch(err) { setError("Falha ao deletar a compra."); }
         setIsLoading(false);
     };
     
     return (
         <div className="bg-gray-50 min-h-screen font-sans text-gray-800">
-            {isConfigModalOpen && <ConfigModal onSave={handleConfigSave} onLogin={handleLogin} config={config} />}
+            {isConfigModalOpen && <ConfigModal onSave={handleConfigSave} onLogin={handleLogin} config={config} onPrepareSheet={handlePrepareSheet} isLoggedIn={isLoggedIn} isPreparing={isPreparingSheet} error={error}/>}
             
             {!isConfigModalOpen && isLoggedIn && (
                  <div className="container mx-auto p-4 md:p-8">
@@ -245,7 +264,7 @@ export default function App() {
     );
 }
 
-function ConfigModal({ onSave, onLogin, config }) {
+function ConfigModal({ onSave, onLogin, config, onPrepareSheet, isLoggedIn, isPreparing, error }) {
     const [localConfig, setLocalConfig] = useState(config);
     const handleChange = (e) => setLocalConfig(prev => ({ ...prev, [e.target.name]: e.target.value }));
     const handleSave = () => onSave(localConfig);
@@ -258,18 +277,22 @@ function ConfigModal({ onSave, onLogin, config }) {
                      <div className="text-sm p-3 bg-blue-50 border rounded-lg">
                         <p className="font-semibold">Instruções:</p>
                         <ol className="list-decimal list-inside mt-2 space-y-1">
-                            <li>Crie um "ID do cliente OAuth 2.0" no <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Cloud Console</a>.</li>
+                            <li>Crie um "ID do cliente OAuth 2.0" no Google Cloud Console.</li>
                             <li>Em "Origens JavaScript autorizadas", adicione o endereço do seu site Vercel.</li>
-                            <li><strong>Importante:</strong> Adicione uma coluna `ID_UNICO` na sua planilha (ex: na coluna L).</li>
+                            <li>**Importante:** Na sua planilha, nomeie a coluna L como `ID_UNICO`.</li>
                         </ol>
                     </div>
                     <div><label className="block text-sm font-medium">Client ID do Google*</label><input type="text" name="clientId" value={localConfig.clientId} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 border rounded-lg" required /></div>
                     <div><label className="block text-sm font-medium">ID da Planilha Google*</label><input type="text" name="spreadsheetId" value={localConfig.spreadsheetId} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 border rounded-lg" required /></div>
                     <div><label className="block text-sm font-medium">Nome da Aba (ex: Junho/2025)*</label><input type="text" name="sheetName" value={localConfig.sheetName} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 border rounded-lg" required /></div>
+                     {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
                 </div>
-                 <div className="p-6">
-                    <button onClick={onLogin} disabled={!localConfig.clientId || !localConfig.spreadsheetId || !localConfig.sheetName} className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg disabled:bg-gray-400">
-                        <GoogleIcon /> Conectar e Sincronizar
+                 <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button onClick={onLogin} disabled={!localConfig.clientId || !localConfig.spreadsheetId || !localConfig.sheetName || isLoggedIn} className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg disabled:bg-gray-400">
+                        <GoogleIcon /> {isLoggedIn ? 'Conectado' : 'Conectar'}
+                    </button>
+                     <button onClick={onPrepareSheet} disabled={!isLoggedIn || isPreparing} className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-green-600 text-white font-semibold rounded-lg disabled:bg-gray-400">
+                        <WandIcon className="h-5 w-5" /> {isPreparing ? 'Preparando...' : 'Preparar Planilha'}
                     </button>
                 </div>
             </div>
@@ -282,25 +305,12 @@ function AddEditForm({ isEditMode=false, purchase, onCancel, onSubmit }) {
     
     useEffect(() => {
         if (isEditMode && purchase) {
-            // Apenas os campos editáveis são necessários no formulário
-            setFormState({
-                nome: purchase.nome,
-                fornecedor: purchase.fornecedor,
-                preco: purchase.preco,
-                status: purchase.status,
-            });
+            setFormState({ nome: purchase.nome, fornecedor: purchase.fornecedor, preco: purchase.preco, status: purchase.status, });
         }
     }, [isEditMode, purchase]);
 
     const handleChange = (e) => setFormState(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        if (isEditMode) {
-            onSubmit(purchase.id, formState);
-        } else {
-            onSubmit(formState);
-        }
-    };
+    const handleSubmit = (e) => { e.preventDefault(); isEditMode ? onSubmit(purchase.id, formState) : onSubmit(formState); };
     
     return (
          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -325,7 +335,7 @@ function DeleteConfirmationModal({ onConfirm, onCancel, purchaseName }) {
                 <div className="p-6 text-center">
                     <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100"><TrashIcon className="h-6 w-6 text-red-600" /></div>
                     <h3 className="text-lg font-medium text-gray-900 mt-4">Excluir Registro</h3>
-                    <div className="mt-2 px-7 py-3"><p className="text-sm text-gray-500">Tem certeza que deseja excluir <span className="font-bold">"{purchaseName}"</span>? Esta ação pode não funcionar corretamente em todas as situações.</p></div>
+                    <div className="mt-2 px-7 py-3"><p className="text-sm text-gray-500">Tem certeza que deseja excluir <span className="font-bold">"{purchaseName}"</span>?</p></div>
                 </div>
                 <div className="p-4 bg-gray-50 flex justify-center gap-3 rounded-b-xl"><button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 rounded-lg w-full">Cancelar</button><button type="button" onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg w-full">Excluir</button></div>
             </div>
