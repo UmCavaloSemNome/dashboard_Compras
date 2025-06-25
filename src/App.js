@@ -94,7 +94,7 @@ export default function App() {
                 setTokenClient(client);
             } catch (err) { console.error("Erro ao inicializar cliente Google:", err); setError("Falha ao inicializar o Google. Verifique o Client ID."); }
         }
-    }, [gapi, google]);
+    }, [gapi, google]); 
 
     const handleLogin = () => {
         if (SPREADSHEET_CONFIG.clientId === 'SEU_CLIENT_ID_VAI_AQUI') {
