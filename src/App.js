@@ -26,7 +26,7 @@ export default function App() {
     const [currentPurchase, setCurrentPurchase] = useState(null);
     
     // Configurações da Planilha
-    const [config, setConfig] = useState({ clientId: '', spreadsheetId: '', sheetName: 'Junho/2025' });
+    const [config, setConfig] = useState({ clientId: '', spreadsheetId: '', sheetName: '' });
 
     // Carrega o Google Sign-In (GSI)
     useEffect(() => {
@@ -77,7 +77,7 @@ export default function App() {
         setIsLoading(true);
         setError(null);
         try {
-            const range = `${config.sheetName}!A:L`;
+            const range = `${config.sheetName}!A:L`; // Lê até a coluna L para pegar o ID
             const response = await gapi.client.sheets.spreadsheets.values.get({
                 spreadsheetId: config.spreadsheetId,
                 range: range,
@@ -89,28 +89,30 @@ export default function App() {
                 const idColIndex = header.indexOf('id_unico');
                 
                 if (idColIndex === -1) {
-                     throw new Error('A coluna "ID_UNICO" não foi encontrada na sua planilha. Por favor, adicione-a (ex: na coluna L) e tente novamente.');
+                     throw new Error('A coluna "ID_UNICO" não foi encontrada. Verifique se ela existe na sua planilha.');
                 }
                 
                 const data = rows.slice(1).map((row, index) => ({
                     rowIndex: index + 2,
                     id: row[idColIndex],
+                    fullRow: row, // Salva a linha inteira para preservar os dados
                     nome: row[0] || '',
                     preco: parseFloat((row[3] || '0').toString().replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) || 0,
                     fornecedor: row[5] || '',
                     status: row[10] || 'Orçamento',
-                })).filter(c => c.id && c.nome); // Garante que apenas linhas com ID e Nome sejam processadas
+                })).filter(c => c.id && c.nome);
                 
                 setCompras(data);
                 if (data.length === 0) {
-                    setError("Conectado com sucesso, mas nenhuma linha com dados válidos (com ID e Nome) foi encontrada na planilha.");
+                    setError("Conectado! Nenhuma linha com dados válidos (com ID e Nome) foi encontrada na planilha.");
                 }
 
             } else {
-                 setError("Conectado com sucesso, mas a planilha ou a aba parecem estar vazias.");
+                 setError("Conectado! A planilha ou a aba selecionada parecem estar vazias.");
             }
         } catch (err) {
-            setError(`Erro ao carregar dados: ${err.message || 'Verifique as configurações e permissões.'}`);
+            const errorMessage = err.result?.error?.message || err.message || 'Um erro desconhecido ocorreu.';
+            setError(`Erro ao carregar dados: ${errorMessage}`);
             console.error(err);
         }
         setIsLoading(false);
@@ -119,7 +121,14 @@ export default function App() {
     const handleAdd = async (newPurchase) => {
         setIsLoading(true);
         const newId = `compra-${Date.now()}`;
-        const newRow = [newPurchase.nome, '', '', newPurchase.preco, '', newPurchase.fornecedor, '', '', '', '', newPurchase.status, newId];
+        // Cria uma nova linha com 12 colunas para corresponder A:L
+        const newRow = Array(12).fill('');
+        newRow[0] = newPurchase.nome;
+        newRow[3] = newPurchase.preco;
+        newRow[5] = newPurchase.fornecedor;
+        newRow[10] = newPurchase.status;
+        newRow[11] = newId;
+
         try {
             await gapi.client.sheets.spreadsheets.values.append({
                 spreadsheetId: config.spreadsheetId, range: `${config.sheetName}!A:L`,
@@ -135,7 +144,22 @@ export default function App() {
         const item = compras.find(c => c.id === id);
         if(!item) return;
         setIsLoading(true);
-        const updatedRow = [updatedPurchase.nome, '', '', updatedPurchase.preco, '', updatedPurchase.fornecedor, '', '', '', '', updatedPurchase.status, id];
+
+        // Cria uma cópia da linha original para preservar todas as colunas
+        const updatedRow = [...item.fullRow];
+        // Garante que a linha tenha o tamanho correto, preenchendo com strings vazias se necessário
+        while(updatedRow.length < 12) {
+            updatedRow.push('');
+        }
+
+        // Atualiza apenas as colunas que são editáveis no formulário
+        updatedRow[0] = updatedPurchase.nome;
+        updatedRow[3] = updatedPurchase.preco;
+        updatedRow[5] = updatedPurchase.fornecedor;
+        updatedRow[10] = updatedPurchase.status;
+        // O ID (coluna L / índice 11) não deve ser alterado
+        updatedRow[11] = id;
+
         try {
             const range = `${config.sheetName}!A${item.rowIndex}:L${item.rowIndex}`;
             await gapi.client.sheets.spreadsheets.values.update({
@@ -239,12 +263,12 @@ function ConfigModal({ onSave, onLogin, config }) {
                             <li><strong>Importante:</strong> Adicione uma coluna `ID_UNICO` na sua planilha (ex: na coluna L).</li>
                         </ol>
                     </div>
-                    <div><label className="block text-sm font-medium">Client ID do Google*</label><input type="text" name="clientId" value={localConfig.clientId} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 border rounded-lg"/></div>
-                    <div><label className="block text-sm font-medium">ID da Planilha Google*</label><input type="text" name="spreadsheetId" value={localConfig.spreadsheetId} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 border rounded-lg"/></div>
-                    <div><label className="block text-sm font-medium">Nome da Aba (ex: Junho/2025)*</label><input type="text" name="sheetName" value={localConfig.sheetName} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 border rounded-lg"/></div>
+                    <div><label className="block text-sm font-medium">Client ID do Google*</label><input type="text" name="clientId" value={localConfig.clientId} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 border rounded-lg" required /></div>
+                    <div><label className="block text-sm font-medium">ID da Planilha Google*</label><input type="text" name="spreadsheetId" value={localConfig.spreadsheetId} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 border rounded-lg" required /></div>
+                    <div><label className="block text-sm font-medium">Nome da Aba (ex: Junho/2025)*</label><input type="text" name="sheetName" value={localConfig.sheetName} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 border rounded-lg" required /></div>
                 </div>
                  <div className="p-6">
-                    <button onClick={onLogin} disabled={!localConfig.clientId || !localConfig.spreadsheetId} className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg disabled:bg-gray-400">
+                    <button onClick={onLogin} disabled={!localConfig.clientId || !localConfig.spreadsheetId || !localConfig.sheetName} className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg disabled:bg-gray-400">
                         <GoogleIcon /> Conectar e Sincronizar
                     </button>
                 </div>
@@ -257,14 +281,25 @@ function AddEditForm({ isEditMode=false, purchase, onCancel, onSubmit }) {
      const [formState, setFormState] = useState({ nome: '', fornecedor: '', preco: '', status: 'Orçamento' });
     
     useEffect(() => {
-        if (isEditMode && purchase) setFormState(purchase);
+        if (isEditMode && purchase) {
+            // Apenas os campos editáveis são necessários no formulário
+            setFormState({
+                nome: purchase.nome,
+                fornecedor: purchase.fornecedor,
+                preco: purchase.preco,
+                status: purchase.status,
+            });
+        }
     }, [isEditMode, purchase]);
 
     const handleChange = (e) => setFormState(prev => ({ ...prev, [e.target.name]: e.target.value }));
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (isEditMode) onSubmit(purchase.id, formState);
-        else onSubmit(formState);
+        if (isEditMode) {
+            onSubmit(purchase.id, formState);
+        } else {
+            onSubmit(formState);
+        }
     };
     
     return (
