@@ -15,9 +15,9 @@ const LogInIcon = ({ className }) => (<svg className={className} xmlns="http://w
 // 1. Substitua os valores abaixo pelo seu Client ID e Spreadsheet ID.
 // 2. Não se esqueça de adicionar o nome exato da sua aba (ex: 'Junho/2025').
 const SPREADSHEET_CONFIG = {
-    clientId: 'SEU_CLIENT_ID_VAI_AQUI',
-    spreadsheetId: 'SEU_SPREADSHEET_ID_VAI_AQUI',
-    sheetName: 'Junho/2025' // <-- Mude aqui se o nome da sua aba for diferente
+    clientId: '375849344447-5qvtr7kho4umqb731272nt6mh8rrp9h7.apps.googleusercontent.com',
+    spreadsheetId: '15s9u9s-5UOeCA-__P1170512Y3TIIypxdKWUdSIJLzo',
+    sheetName: 'compras' // <-- Mude aqui se o nome da sua aba for diferente
 };
 
 
