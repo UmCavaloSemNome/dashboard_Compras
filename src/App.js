@@ -88,8 +88,10 @@ export default function App() {
                 const header = rows[0].map(h => h.toLowerCase().trim());
                 const idColIndex = header.indexOf('id_unico');
                 
-                if (idColIndex === -1) throw new Error('A coluna "ID_UNICO" não foi encontrada na sua planilha.');
-
+                if (idColIndex === -1) {
+                     throw new Error('A coluna "ID_UNICO" não foi encontrada na sua planilha. Por favor, adicione-a (ex: na coluna L) e tente novamente.');
+                }
+                
                 const data = rows.slice(1).map((row, index) => ({
                     rowIndex: index + 2,
                     id: row[idColIndex],
@@ -97,8 +99,15 @@ export default function App() {
                     preco: parseFloat((row[3] || '0').toString().replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) || 0,
                     fornecedor: row[5] || '',
                     status: row[10] || 'Orçamento',
-                })).filter(c => c.id); // Garante que apenas linhas com ID sejam processadas
+                })).filter(c => c.id && c.nome); // Garante que apenas linhas com ID e Nome sejam processadas
+                
                 setCompras(data);
+                if (data.length === 0) {
+                    setError("Conectado com sucesso, mas nenhuma linha com dados válidos (com ID e Nome) foi encontrada na planilha.");
+                }
+
+            } else {
+                 setError("Conectado com sucesso, mas a planilha ou a aba parecem estar vazias.");
             }
         } catch (err) {
             setError(`Erro ao carregar dados: ${err.message || 'Verifique as configurações e permissões.'}`);
@@ -158,7 +167,7 @@ export default function App() {
             });
             await fetchSheetData();
             setIsDeleteModalOpen(false);
-        } catch(err) { setError("Falha ao deletar a compra. Nota: A API não pode deletar a última linha de uma aba."); console.error(err); }
+        } catch(err) { setError("Falha ao deletar a compra."); console.error(err); }
         setIsLoading(false);
     };
     
@@ -175,25 +184,29 @@ export default function App() {
                         </button>
                     </header>
 
-                    {error && <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md" role="alert"><p>{error}</p></div>}
+                    {error && <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-md" role="alert"><p className="font-bold">Aviso:</p><p>{error}</p></div>}
                     
                     {isLoading ? <p className="text-center p-8">Sincronizando com a planilha...</p> : (
                         <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead className="bg-gray-50"><tr><th className="p-4 font-semibold text-sm">Produto</th><th className="p-4">Fornecedor</th><th className="p-4">Preço</th><th className="p-4">Status</th><th className="p-4 text-center">Ações</th></tr></thead>
                                 <tbody>
-                                    {compras.map(compra => (
-                                        <tr key={compra.id || compra.rowIndex} className="border-b last:border-0 hover:bg-gray-50">
-                                            <td className="p-4 font-medium">{compra.nome}</td>
-                                            <td className="p-4">{compra.fornecedor}</td>
-                                            <td className="p-4">{(compra.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                            <td className="p-4">{compra.status}</td>
-                                            <td className="p-4 text-center"><div className="flex justify-center gap-2">
-                                                <button onClick={() => { setCurrentPurchase(compra); setIsEditModalOpen(true); }} className="text-blue-600 hover:text-blue-800" title="Editar"><PencilIcon className="h-5 w-5" /></button>
-                                                <button onClick={() => { setCurrentPurchase(compra); setIsDeleteModalOpen(true); }} className="text-red-600 hover:text-red-800" title="Excluir"><TrashIcon className="h-5 w-5" /></button>
-                                            </div></td>
-                                        </tr>
-                                    ))}
+                                    {compras.length > 0 ? (
+                                        compras.map(compra => (
+                                            <tr key={compra.id || compra.rowIndex} className="border-b last:border-0 hover:bg-gray-50">
+                                                <td className="p-4 font-medium">{compra.nome}</td>
+                                                <td className="p-4">{compra.fornecedor}</td>
+                                                <td className="p-4">{(compra.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                                <td className="p-4">{compra.status}</td>
+                                                <td className="p-4 text-center"><div className="flex justify-center gap-2">
+                                                    <button onClick={() => { setCurrentPurchase(compra); setIsEditModalOpen(true); }} className="text-blue-600 hover:text-blue-800" title="Editar"><PencilIcon className="h-5 w-5" /></button>
+                                                    <button onClick={() => { setCurrentPurchase(compra); setIsDeleteModalOpen(true); }} className="text-red-600 hover:text-red-800" title="Excluir"><TrashIcon className="h-5 w-5" /></button>
+                                                </div></td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr><td colSpan="5" className="text-center p-8 text-gray-500">Nenhum dado para exibir.</td></tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -222,12 +235,13 @@ function ConfigModal({ onSave, onLogin, config }) {
                         <p className="font-semibold">Instruções:</p>
                         <ol className="list-decimal list-inside mt-2 space-y-1">
                             <li>Crie um "ID do cliente OAuth 2.0" no <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Google Cloud Console</a>.</li>
-                            <li>Em "Origens JavaScript autorizadas", adicione o endereço do seu futuro site Vercel.</li>
-                            <li><strong>Importante:</strong> Adicione uma coluna `ID_UNICO` na sua planilha (pode ser a coluna L).</li>
+                            <li>Em "Origens JavaScript autorizadas", adicione o endereço do seu site Vercel.</li>
+                            <li><strong>Importante:</strong> Adicione uma coluna `ID_UNICO` na sua planilha (ex: na coluna L).</li>
                         </ol>
                     </div>
                     <div><label className="block text-sm font-medium">Client ID do Google*</label><input type="text" name="clientId" value={localConfig.clientId} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 border rounded-lg"/></div>
                     <div><label className="block text-sm font-medium">ID da Planilha Google*</label><input type="text" name="spreadsheetId" value={localConfig.spreadsheetId} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 border rounded-lg"/></div>
+                    <div><label className="block text-sm font-medium">Nome da Aba (ex: Junho/2025)*</label><input type="text" name="sheetName" value={localConfig.sheetName} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 border rounded-lg"/></div>
                 </div>
                  <div className="p-6">
                     <button onClick={onLogin} disabled={!localConfig.clientId || !localConfig.spreadsheetId} className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg disabled:bg-gray-400">
