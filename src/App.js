@@ -6,8 +6,9 @@ const XIcon = ({ className }) => (<svg className={className} xmlns="http://www.w
 const PencilIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>);
 const TrashIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><polyline points="10 11 10 17"></polyline><polyline points="14 11 14 17"></polyline></svg>);
 const GoogleIcon = () => (<svg viewBox="0 0 48 48" width="24px" height="24px"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C44.438,36.338,48,31,48,24C48,22.659,47.862,21.35,47.611,20.083z"></path></svg>);
-const WandIcon = ({className}) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 4V2m0 14V4m0 12h-2m5-11l-1-1m-10 0l-1 1m5 16l-2-2m-8-6H2m4 0h2m10 0h2M7 5l-1-1M7 19l-1 1m10-14l1-1m-1 14l1 1m-4-8a2 2 0 0 0-2-2 2 2 0 0 0-2 2 2 2 0 0 0 2 2 2 2 0 0 0 2-2Z"/></svg>)
-
+const WandIcon = ({className}) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 4V2m0 14V4m0 12h-2m5-11l-1-1m-10 0l-1 1m5 16l-2-2m-8-6H2m4 0h2m10 0h2M7 5l-1-1M7 19l-1 1m10-14l1-1m-1 14l1 1m-4-8a2 2 0 0 0-2-2 2 2 0 0 0-2 2 2 2 0 0 0 2 2 2 2 0 0 0 2-2Z"/></svg>);
+const SunIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>);
+const MoonIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>);
 
 // --- Componente Principal: App ---
 export default function App() {
@@ -19,6 +20,7 @@ export default function App() {
     const [compras, setCompras] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [theme, setTheme] = useState('light');
 
     // Modais e Dados
     const [isConfigModalOpen, setIsConfigModalOpen] = useState(true);
@@ -31,6 +33,24 @@ export default function App() {
     const [config, setConfig] = useState({ clientId: '', spreadsheetId: '', sheetName: '' });
     const [isPreparingSheet, setIsPreparingSheet] = useState(false);
 
+    // Gerenciador de Tema (Modo Escuro)
+    useEffect(() => {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+    }, []);
+
+    useEffect(() => {
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        localStorage.setItem('theme', theme);
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
+    };
 
     // Carrega o Google Sign-In (GSI)
     useEffect(() => {
@@ -97,7 +117,7 @@ export default function App() {
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
                 let currentId = row[idColIndex];
-                if (!currentId && row[0]) { // Se não tem ID, mas tem nome do produto
+                if (!currentId && row[0]) {
                     currentId = `compra-${Date.now()}-${i}`;
                     needsUpdate = true;
                 }
@@ -215,40 +235,54 @@ export default function App() {
     };
     
     return (
-        <div className="bg-gray-50 min-h-screen font-sans text-gray-800">
+        <div className="bg-slate-100 dark:bg-slate-900 min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300">
             {isConfigModalOpen && <ConfigModal onSave={handleConfigSave} onLogin={handleLogin} config={config} onPrepareSheet={handlePrepareSheet} isLoggedIn={isLoggedIn} isPreparing={isPreparingSheet} error={error}/>}
             
             {!isConfigModalOpen && isLoggedIn && (
-                 <div className="container mx-auto p-4 md:p-8">
-                    <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8">
-                        <h1 className="text-3xl font-bold text-gray-900">Dashboard de Compras</h1>
-                        <button onClick={() => setIsAddModalOpen(true)} className="mt-4 sm:mt-0 flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700">
-                            <PlusCircleIcon className="h-5 w-5" /> Adicionar Compra
-                        </button>
+                 <div className="container mx-auto p-4 md:p-6 lg:p-8">
+                    <header className="flex justify-between items-center mb-8">
+                        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">Dashboard de Compras</h1>
+                        <div className="flex items-center gap-4">
+                            <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300">
+                                <PlusCircleIcon className="h-5 w-5" />
+                                <span className="hidden sm:inline">Adicionar Compra</span>
+                            </button>
+                             <button onClick={toggleTheme} className="p-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors duration-300">
+                                {theme === 'light' ? <MoonIcon className="h-5 w-5"/> : <SunIcon className="h-5 w-5"/>}
+                            </button>
+                        </div>
                     </header>
 
-                    {error && <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-md" role="alert"><p className="font-bold">Aviso:</p><p>{error}</p></div>}
+                    {error && <div className="bg-yellow-100 dark:bg-yellow-900/20 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-300 p-4 mb-6 rounded-md" role="alert"><p className="font-bold">Aviso:</p><p>{error}</p></div>}
                     
-                    {isLoading ? <p className="text-center p-8">Sincronizando com a planilha...</p> : (
-                        <div className="bg-white rounded-xl shadow-sm border overflow-x-auto">
+                    {isLoading ? <p className="text-center p-8 text-slate-500 dark:text-slate-400">Sincronizando com a planilha...</p> : (
+                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="bg-gray-50"><tr><th className="p-4 font-semibold text-sm">Produto</th><th className="p-4">Fornecedor</th><th className="p-4">Preço</th><th className="p-4">Status</th><th className="p-4 text-center">Ações</th></tr></thead>
-                                <tbody>
+                                <thead className="bg-slate-50 dark:bg-slate-700/50">
+                                    <tr>
+                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Produto</th>
+                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Fornecedor</th>
+                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Preço</th>
+                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Status</th>
+                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                                     {compras.length > 0 ? (
                                         compras.map(compra => (
-                                            <tr key={compra.id || compra.rowIndex} className="border-b last:border-0 hover:bg-gray-50">
-                                                <td className="p-4 font-medium">{compra.nome}</td>
-                                                <td className="p-4">{compra.fornecedor}</td>
-                                                <td className="p-4">{(compra.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                                <td className="p-4">{compra.status}</td>
-                                                <td className="p-4 text-center"><div className="flex justify-center gap-2">
-                                                    <button onClick={() => { setCurrentPurchase(compra); setIsEditModalOpen(true); }} className="text-blue-600 hover:text-blue-800" title="Editar"><PencilIcon className="h-5 w-5" /></button>
-                                                    <button onClick={() => { setCurrentPurchase(compra); setIsDeleteModalOpen(true); }} className="text-red-600 hover:text-red-800" title="Excluir"><TrashIcon className="h-5 w-5" /></button>
+                                            <tr key={compra.id || compra.rowIndex} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200">
+                                                <td className="p-4 font-medium text-slate-900 dark:text-white">{compra.nome}</td>
+                                                <td className="p-4 text-slate-500 dark:text-slate-400">{compra.fornecedor}</td>
+                                                <td className="p-4 text-slate-500 dark:text-slate-400">{(compra.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                                <td className="p-4 text-slate-500 dark:text-slate-400">{compra.status}</td>
+                                                <td className="p-4"><div className="flex justify-center gap-3">
+                                                    <button onClick={() => { setCurrentPurchase(compra); setIsEditModalOpen(true); }} className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 transition-colors" title="Editar"><PencilIcon className="h-5 w-5" /></button>
+                                                    <button onClick={() => { setCurrentPurchase(compra); setIsDeleteModalOpen(true); }} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors" title="Excluir"><TrashIcon className="h-5 w-5" /></button>
                                                 </div></td>
                                             </tr>
                                         ))
                                     ) : (
-                                        <tr><td colSpan="5" className="text-center p-8 text-gray-500">Nenhum dado para exibir.</td></tr>
+                                        <tr><td colSpan="5" className="text-center p-8 text-slate-500 dark:text-slate-400">Nenhum dado para exibir.</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -270,28 +304,28 @@ function ConfigModal({ onSave, onLogin, config, onPrepareSheet, isLoggedIn, isPr
     const handleSave = () => onSave(localConfig);
     
     return (
-        <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
-                <div className="p-6"><h3 className="text-2xl font-bold text-center">Conectar com Google Sheets</h3></div>
+        <div className="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-700">
+                <div className="p-6 border-b border-slate-200 dark:border-slate-700"><h3 className="text-2xl font-bold text-center text-slate-900 dark:text-white">Conectar com Google Sheets</h3></div>
                 <div className="p-6 space-y-4">
-                     <div className="text-sm p-3 bg-blue-50 border rounded-lg">
-                        <p className="font-semibold">Instruções:</p>
-                        <ol className="list-decimal list-inside mt-2 space-y-1">
+                     <div className="text-sm p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-500/30 rounded-lg text-blue-800 dark:text-blue-200">
+                        <p className="font-semibold mb-2">Instruções:</p>
+                        <ol className="list-decimal list-inside space-y-1">
                             <li>Crie um "ID do cliente OAuth 2.0" no Google Cloud Console.</li>
                             <li>Em "Origens JavaScript autorizadas", adicione o endereço do seu site Vercel.</li>
                             <li>**Importante:** Na sua planilha, nomeie a coluna L como `ID_UNICO`.</li>
                         </ol>
                     </div>
-                    <div><label className="block text-sm font-medium">Client ID do Google*</label><input type="text" name="clientId" value={localConfig.clientId} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 border rounded-lg" required /></div>
-                    <div><label className="block text-sm font-medium">ID da Planilha Google*</label><input type="text" name="spreadsheetId" value={localConfig.spreadsheetId} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 border rounded-lg" required /></div>
-                    <div><label className="block text-sm font-medium">Nome da Aba (ex: Junho/2025)*</label><input type="text" name="sheetName" value={localConfig.sheetName} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 border rounded-lg" required /></div>
-                     {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Client ID do Google*</label><input type="text" name="clientId" value={localConfig.clientId} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" required /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">ID da Planilha Google*</label><input type="text" name="spreadsheetId" value={localConfig.spreadsheetId} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" required /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome da Aba (ex: Junho/2025)*</label><input type="text" name="sheetName" value={localConfig.sheetName} onChange={handleChange} onBlur={handleSave} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" required /></div>
+                     {error && <p className="text-red-500 dark:text-red-400 text-sm mt-2">{error}</p>}
                 </div>
-                 <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button onClick={onLogin} disabled={!localConfig.clientId || !localConfig.spreadsheetId || !localConfig.sheetName || isLoggedIn} className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg disabled:bg-gray-400">
+                 <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 grid grid-cols-1 md:grid-cols-2 gap-4 rounded-b-xl">
+                    <button onClick={onLogin} disabled={!localConfig.clientId || !localConfig.spreadsheetId || !localConfig.sheetName || isLoggedIn} className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-blue-600 text-white font-semibold rounded-lg shadow-sm hover:bg-blue-700 disabled:bg-slate-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors">
                         <GoogleIcon /> {isLoggedIn ? 'Conectado' : 'Conectar'}
                     </button>
-                     <button onClick={onPrepareSheet} disabled={!isLoggedIn || isPreparing} className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-green-600 text-white font-semibold rounded-lg disabled:bg-gray-400">
+                     <button onClick={onPrepareSheet} disabled={!isLoggedIn || isPreparing} className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-green-600 text-white font-semibold rounded-lg shadow-sm hover:bg-green-700 disabled:bg-slate-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors">
                         <WandIcon className="h-5 w-5" /> {isPreparing ? 'Preparando...' : 'Preparar Planilha'}
                     </button>
                 </div>
@@ -313,16 +347,19 @@ function AddEditForm({ isEditMode=false, purchase, onCancel, onSubmit }) {
     const handleSubmit = (e) => { e.preventDefault(); isEditMode ? onSubmit(purchase.id, formState) : onSubmit(formState); };
     
     return (
-         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-             <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-2xl w-full max-w-lg">
-                 <div className="p-6 border-b flex justify-between items-center"><h3 className="text-xl font-semibold">{isEditMode ? 'Editar' : 'Adicionar'} Compra</h3><button type="button" onClick={onCancel}><XIcon className="h-6 w-6" /></button></div>
+         <div className="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+             <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-700">
+                 <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center"><h3 className="text-xl font-semibold text-slate-900 dark:text-white">{isEditMode ? 'Editar' : 'Adicionar'} Compra</h3><button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><XIcon className="h-6 w-6" /></button></div>
                  <div className="p-6 space-y-4">
-                    <div><label className="block text-sm font-medium">Nome*</label><input type="text" name="nome" value={formState.nome} onChange={handleChange} required className="w-full px-3 py-2 border rounded-lg"/></div>
-                    <div><label className="block text-sm font-medium">Fornecedor</label><input type="text" name="fornecedor" value={formState.fornecedor} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg"/></div>
-                    <div><label className="block text-sm font-medium">Preço*</label><input type="number" step="0.01" name="preco" value={formState.preco} onChange={handleChange} required className="w-full px-3 py-2 border rounded-lg"/></div>
-                    <div><label className="block text-sm font-medium">Status</label><select name="status" value={formState.status} onChange={handleChange} className="w-full px-3 py-2 border rounded-lg bg-white"><option>Orçamento</option><option>Pendente</option><option>Comprado</option></select></div>
+                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome*</label><input type="text" name="nome" value={formState.nome} onChange={handleChange} required className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"/></div>
+                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fornecedor</label><input type="text" name="fornecedor" value={formState.fornecedor} onChange={handleChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"/></div>
+                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Preço*</label><input type="number" step="0.01" name="preco" value={formState.preco} onChange={handleChange} required className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"/></div>
+                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status</label><select name="status" value={formState.status} onChange={handleChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"><option>Orçamento</option><option>Pendente</option><option>Comprado</option></select></div>
                  </div>
-                <div className="p-4 bg-gray-50 flex justify-end gap-3 rounded-b-xl"><button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 rounded-lg">Cancelar</button><button type="submit" className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg">Salvar na Planilha</button></div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 rounded-b-xl">
+                    <button type="button" onClick={onCancel} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">Cancelar</button>
+                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Salvar na Planilha</button>
+                </div>
              </form>
          </div>
     );
@@ -330,14 +367,17 @@ function AddEditForm({ isEditMode=false, purchase, onCancel, onSubmit }) {
 
 function DeleteConfirmationModal({ onConfirm, onCancel, purchaseName }) {
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm">
+        <div className="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-700">
                 <div className="p-6 text-center">
-                    <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100"><TrashIcon className="h-6 w-6 text-red-600" /></div>
-                    <h3 className="text-lg font-medium text-gray-900 mt-4">Excluir Registro</h3>
-                    <div className="mt-2 px-7 py-3"><p className="text-sm text-gray-500">Tem certeza que deseja excluir <span className="font-bold">"{purchaseName}"</span>?</p></div>
+                    <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20"><TrashIcon className="h-6 w-6 text-red-600 dark:text-red-400" /></div>
+                    <h3 className="text-lg font-medium text-slate-900 dark:text-white mt-4">Excluir Registro</h3>
+                    <div className="mt-2 px-7 py-3"><p className="text-sm text-slate-500 dark:text-slate-400">Tem certeza que deseja excluir <span className="font-bold">"{purchaseName}"</span>?</p></div>
                 </div>
-                <div className="p-4 bg-gray-50 flex justify-center gap-3 rounded-b-xl"><button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 rounded-lg w-full">Cancelar</button><button type="button" onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg w-full">Excluir</button></div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-center gap-3 rounded-b-xl">
+                    <button type="button" onClick={onCancel} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 w-full transition-colors">Cancelar</button>
+                    <button type="button" onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 w-full transition-colors">Excluir</button>
+                </div>
             </div>
         </div>
     );
