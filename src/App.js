@@ -94,7 +94,11 @@ export default function App() {
                 setTokenClient(client);
             } catch (err) { console.error("Erro ao inicializar cliente Google:", err); setError("Falha ao inicializar o Google. Verifique o Client ID."); }
         }
+<<<<<<< HEAD
     }, [gapi, google]);
+=======
+    }, [gapi, google]); 
+>>>>>>> b9ce6113f22f45a3d5768504998a3672d5e54b89
 
     const handleLogin = () => {
         if (SPREADSHEET_CONFIG.clientId === 'SEU_CLIENT_ID_VAI_AQUI') {
@@ -320,4 +324,8 @@ function DeleteConfirmationModal({ onConfirm, onCancel, purchaseName }) {
             </div>
         </div>
     );
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> b9ce6113f22f45a3d5768504998a3672d5e54b89

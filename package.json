@@ -9,14 +9,23 @@
     "@testing-library/user-event": "^13.5.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+<<<<<<< HEAD
     "react-scripts": "5.0.1",
+=======
+    "react-scripts": "^0.0.0",
+>>>>>>> b9ce6113f22f45a3d5768504998a3672d5e54b89
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+<<<<<<< HEAD
     "eject": "react-scripts eject"
+=======
+    "eject": "react-scripts eject",
+    "tailwind-init": "tailwindcss init -p"
+>>>>>>> b9ce6113f22f45a3d5768504998a3672d5e54b89
   },
   "eslintConfig": {
     "extends": [
