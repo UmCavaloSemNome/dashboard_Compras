@@ -12,7 +12,7 @@ const MoonIcon = ({ className }) => (<svg className={className} xmlns="http://ww
 // --- INSTRUÇÕES IMPORTANTES ---
 const SPREADSHEET_CONFIG = {
     clientId: '375849344447-5qvtr7kho4umqb731272nt6mh8rrp9h7.apps.googleusercontent.com',
-    spreadsheetId: 'S15s9u9s-5UOeCA-__P1170512Y3TIIypxdKWUdSIJLzo',
+    spreadsheetId: '15s9u9s-5UOeCA-__P1170512Y3TIIypxdKWUdSIJLzo',
     sheetName: 'compras'
 };
 
