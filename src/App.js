@@ -27,9 +27,12 @@ export default function App() {
     const [error, setError] = useState(null);
     const [theme, setTheme] = useState('light');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [currentPurchase, setCurrentPurchase] = useState(null);
+    const [filterStatus, setFilterStatus] = useState('Todos');
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme') || 'light';
@@ -153,6 +156,29 @@ export default function App() {
         setIsLoading(false);
     };
 
+    const handleAddBudget = async (items) => {
+        setIsLoading(true);
+        const values = items.map(item => {
+            const id = `compra-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+            const row = Array(12).fill('');
+            row[0] = item.nome; row[3] = item.preco; row[5] = item.fornecedor; row[10] = item.status; row[11] = id;
+            return row;
+        });
+        try {
+            await gapi.client.sheets.spreadsheets.values.append({
+                spreadsheetId: SPREADSHEET_CONFIG.spreadsheetId,
+                range: `${SPREADSHEET_CONFIG.sheetName}!A:L`,
+                valueInputOption: 'USER_ENTERED',
+                resource: { values }
+            });
+            await fetchSheetData();
+            setIsBudgetModalOpen(false);
+        } catch (err) {
+            setError("Falha ao adicionar o orçamento.");
+        }
+        setIsLoading(false);
+    };
+
     const handleEdit = async (id, updatedPurchase) => {
         const item = compras.find(c => c.id === id);
         if (!item) return;
@@ -213,6 +239,11 @@ export default function App() {
         setIsLoading(false);
     };
 
+    const filteredCompras = compras
+        .filter(c => filterStatus === 'Todos' || c.status === filterStatus)
+        .filter(c => c.nome.toLowerCase().includes(searchTerm.toLowerCase()));
+    const total = filteredCompras.reduce((sum, c) => sum + (c.preco || 0), 0);
+
     return (
         <div className="bg-slate-100 dark:bg-slate-900 min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300">
             {!isLoggedIn ? (
@@ -226,11 +257,24 @@ export default function App() {
                                 <PlusCircleIcon className="h-5 w-5" />
                                 <span className="hidden sm:inline">Adicionar Compra</span>
                             </button>
+                            <button onClick={() => setIsBudgetModalOpen(true)} className="flex items-center gap-2 bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-300">
+                                <PlusCircleIcon className="h-5 w-5" />
+                                <span className="hidden sm:inline">Novo Orçamento</span>
+                            </button>
                             <button onClick={toggleTheme} className="p-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors duration-300">
                                 {theme === 'light' ? <MoonIcon className="h-5 w-5" /> : <SunIcon className="h-5 w-5" />}
                             </button>
                         </div>
                     </header>
+                    <div className="flex flex-col md:flex-row gap-4 mb-4">
+                        <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Buscar por nome" className="px-3 py-2 border rounded-lg bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600" />
+                        <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} className="px-3 py-2 border rounded-lg bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600">
+                            <option value="Todos">Todos</option>
+                            <option value="Orçamento">Orçamento</option>
+                            <option value="Pendente">Pendente</option>
+                            <option value="Comprado">Comprado</option>
+                        </select>
+                    </div>
                     {error && <div className="bg-yellow-100 dark:bg-yellow-900/20 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-300 p-4 mb-6 rounded-md" role="alert"><p className="font-bold">Aviso:</p><p>{error}</p></div>}
                     {isLoading ? <p className="text-center p-8 text-slate-500 dark:text-slate-400">Sincronizando com a planilha...</p> : (
                         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
@@ -245,8 +289,8 @@ export default function App() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                    {compras.length > 0 ? (
-                                        compras.map(compra => (
+                                    {filteredCompras.length > 0 ? (
+                                        filteredCompras.map(compra => (
                                             <tr key={compra.id || compra.rowIndex} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200">
                                                 <td className="p-4 font-medium text-slate-900 dark:text-white">{compra.nome}</td>
                                                 <td className="p-4 text-slate-500 dark:text-slate-400">{compra.fornecedor}</td>
@@ -264,10 +308,14 @@ export default function App() {
                                 </tbody>
                             </table>
                         </div>
+                        <div className="mt-4 text-right font-semibold">
+                            Total: {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </div>
                     )}
                 </div>
             )}
             {isAddModalOpen && <AddEditForm onCancel={() => setIsAddModalOpen(false)} onSubmit={handleAdd} />}
+            {isBudgetModalOpen && <AddBudgetForm onCancel={() => setIsBudgetModalOpen(false)} onSubmit={handleAddBudget} />}
             {isEditModalOpen && currentPurchase && <AddEditForm isEditMode purchase={currentPurchase} onCancel={() => setIsEditModalOpen(false)} onSubmit={(id, data) => handleEdit(id, data)} />}
             {isDeleteModalOpen && currentPurchase && <DeleteConfirmationModal onConfirm={() => handleDelete(currentPurchase.id)} onCancel={() => setIsDeleteModalOpen(false)} purchaseName={currentPurchase.nome} />}
         </div>
@@ -309,6 +357,60 @@ function AddEditForm({ isEditMode = false, purchase, onCancel, onSubmit }) {
                 <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 rounded-b-xl">
                     <button type="button" onClick={onCancel} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">Cancelar</button>
                     <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Salvar na Planilha</button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
+function AddBudgetForm({ onCancel, onSubmit }) {
+    const [items, setItems] = useState([{ nome: '', fornecedor: '', preco: '', status: 'Orçamento' }]);
+
+    const handleItemChange = (index, e) => {
+        const newItems = items.slice();
+        newItems[index][e.target.name] = e.target.value;
+        setItems(newItems);
+    };
+
+    const addItem = () => setItems([...items, { nome: '', fornecedor: '', preco: '', status: 'Orçamento' }]);
+    const removeItem = (index) => setItems(items.filter((_, i) => i !== index));
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSubmit(items);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl border border-slate-200 dark:border-slate-700 p-6 space-y-4">
+                <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Novo Orçamento</h3>
+                    <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><XIcon className="h-6 w-6" /></button>
+                </div>
+                {items.map((item, idx) => (
+                    <div key={idx} className="border rounded-lg p-4 space-y-3 bg-slate-50 dark:bg-slate-700">
+                        <div className="flex justify-between items-center">
+                            <h4 className="font-semibold">Item {idx + 1}</h4>
+                            {items.length > 1 && <button type="button" onClick={() => removeItem(idx)} className="text-red-500 hover:text-red-700"><TrashIcon className="h-4 w-4" /></button>}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <input type="text" name="nome" value={item.nome} onChange={e => handleItemChange(idx, e)} placeholder="Nome" required className="px-3 py-2 border rounded-lg bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500" />
+                            <input type="text" name="fornecedor" value={item.fornecedor} onChange={e => handleItemChange(idx, e)} placeholder="Fornecedor" className="px-3 py-2 border rounded-lg bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500" />
+                            <input type="number" step="0.01" name="preco" value={item.preco} onChange={e => handleItemChange(idx, e)} placeholder="Preço" required className="px-3 py-2 border rounded-lg bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500" />
+                            <select name="status" value={item.status} onChange={e => handleItemChange(idx, e)} className="px-3 py-2 border rounded-lg bg-white dark:bg-slate-600 border-slate-300 dark:border-slate-500">
+                                <option>Orçamento</option>
+                                <option>Pendente</option>
+                                <option>Comprado</option>
+                            </select>
+                        </div>
+                    </div>
+                ))}
+                <div className="flex justify-between">
+                    <button type="button" onClick={addItem} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600">Adicionar Item</button>
+                    <div className="space-x-2">
+                        <button type="button" onClick={onCancel} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600">Cancelar</button>
+                        <button type="submit" className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Salvar</button>
+                    </div>
                 </div>
             </form>
         </div>
