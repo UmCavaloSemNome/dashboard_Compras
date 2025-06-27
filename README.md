@@ -1,6 +1,33 @@
-# Getting Started with Create React App
+# Dashboard de Compras
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Dashboard em React para gerir registros de compras guardados em uma planilha do Google. Os usuários fazem login com a conta Google e as alterações são sincronizadas diretamente com a planilha.
+
+Este projeto foi bootstrapped com [Create React App](https://github.com/facebook/create-react-app).
+
+## Instalação
+
+1. Instale as dependências:
+
+   ```bash
+   npm install
+   ```
+
+2. Inicie o aplicativo em modo de desenvolvimento:
+
+   ```bash
+   npm start
+   ```
+
+   A aplicação estará disponível em [http://localhost:3000](http://localhost:3000).
+
+## Configuração das Credenciais do Google
+
+1. Crie um projeto no [Console do Google Cloud](https://console.cloud.google.com/).
+2. Ative a API Google Sheets para esse projeto.
+3. Em **APIs e serviços > Credenciais**, crie um ID do cliente OAuth do tipo **Aplicativo da Web** e adicione `http://localhost:3000` como origem JavaScript autorizada.
+4. Copie o **Client ID** gerado e abra o arquivo `src/App.js`.
+5. No objeto `SPREADSHEET_CONFIG`, substitua os valores de `clientId`, `spreadsheetId` e `sheetName` pelos dados da sua planilha.
+6. Salve o arquivo e reinicie a aplicação.
 
 ## Available Scripts
 
