@@ -11,9 +11,9 @@ const MoonIcon = ({ className }) => (<svg className={className} xmlns="http://ww
 
 // --- INSTRUÇÕES IMPORTANTES ---
 const SPREADSHEET_CONFIG = {
-    clientId: '375849344447-5qvtr7kho4umqb731272nt6mh8rrp9h7.apps.googleusercontent.com',
-    spreadsheetId: '15s9u9s-5UOeCA-__P1170512Y3TIIypxdKWUdSIJLzo',
-    sheetName: 'compras'
+    clientId: process.env.REACT_APP_GOOGLE_CLIENT_ID,
+    spreadsheetId: process.env.REACT_APP_SPREADSHEET_ID,
+    sheetName: process.env.REACT_APP_SHEET_NAME,
 };
 
 // --- Componente Principal: App ---

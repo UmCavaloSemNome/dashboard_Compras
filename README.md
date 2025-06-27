@@ -1,6 +1,19 @@
 # Getting Started with Create React App
 
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+
+## Environment Variables
+
+Create a `.env` file in the project root and define the following variables:
+
+```
+REACT_APP_GOOGLE_CLIENT_ID=SEU_CLIENT_ID_VAI_AQUI
+REACT_APP_SPREADSHEET_ID=SEU_SPREADSHEET_ID_VAI_AQUI
+REACT_APP_SHEET_NAME=nome_da_aba
+```
+
+These values are used by the app to authenticate with Google and locate the spreadsheet.
 
 ## Available Scripts
 
