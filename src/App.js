@@ -213,6 +213,8 @@ export default function App() {
         setIsLoading(false);
     };
 
+    const total = compras.reduce((sum, c) => sum + (c.preco || 0), 0);
+
     return (
         <div className="bg-slate-100 dark:bg-slate-900 min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300">
             {!isLoggedIn ? (
@@ -233,8 +235,9 @@ export default function App() {
                     </header>
                     {error && <div className="bg-yellow-100 dark:bg-yellow-900/20 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-300 p-4 mb-6 rounded-md" role="alert"><p className="font-bold">Aviso:</p><p>{error}</p></div>}
                     {isLoading ? <p className="text-center p-8 text-slate-500 dark:text-slate-400">Sincronizando com a planilha...</p> : (
-                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
-                            <table className="w-full text-left">
+                        <>
+                            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
+                                <table className="w-full text-left">
                                 <thead className="bg-slate-50 dark:bg-slate-700/50">
                                     <tr>
                                         <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Produto</th>
@@ -262,8 +265,12 @@ export default function App() {
                                         <tr><td colSpan="5" className="text-center p-8 text-slate-500 dark:text-slate-400">Nenhum dado para exibir.</td></tr>
                                     )}
                                 </tbody>
-                            </table>
-                        </div>
+                                </table>
+                            </div>
+                            <div className="mt-4 text-right font-semibold">
+                                Total: {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </div>
+                        </>
                     )}
                 </div>
             )}
