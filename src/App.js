@@ -30,6 +30,7 @@ export default function App() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [currentPurchase, setCurrentPurchase] = useState(null);
+    const totalValue = compras.reduce((sum, c) => sum + (c.preco || 0), 0);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme') || 'light';
@@ -233,6 +234,7 @@ export default function App() {
                     </header>
                     {error && <div className="bg-yellow-100 dark:bg-yellow-900/20 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-300 p-4 mb-6 rounded-md" role="alert"><p className="font-bold">Aviso:</p><p>{error}</p></div>}
                     {isLoading ? <p className="text-center p-8 text-slate-500 dark:text-slate-400">Sincronizando com a planilha...</p> : (
+                        <>
                         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50 dark:bg-slate-700/50">
@@ -264,6 +266,10 @@ export default function App() {
                                 </tbody>
                             </table>
                         </div>
+                        <div className="mt-4 text-right font-semibold">
+                            Total: {totalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </div>
+                        </>
                     )}
                 </div>
             )}
