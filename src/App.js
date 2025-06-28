@@ -27,7 +27,7 @@ export default function App() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [theme, setTheme] = useState('light');
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isAddOrderModalOpen, setIsAddOrderModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [currentPurchase, setCurrentPurchase] = useState(null);
@@ -113,15 +113,20 @@ export default function App() {
                 const header = rows[0].map(h => h.toLowerCase().trim());
                 const idColIndex = header.indexOf('id_unico');
                 if (idColIndex === -1) throw new Error('A coluna "ID_UNICO" não foi encontrada.');
+
                 const data = rows.slice(1).map((row, index) => ({
                     rowIndex: index + 2,
                     id: row[idColIndex],
                     fullRow: row,
                     nome: row[0] || '',
+                    solicitante: row[1] || 'Não informado',
+                    comprador: row[2] || 'Não informado',
                     preco: parseFloat((row[3] || '0').toString().replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) || 0,
+                    quantidade: parseInt(row[4] || '1', 10),
                     fornecedor: row[5] || '',
                     status: row[10] || 'Orçamento',
                 })).filter(c => c.id && c.nome);
+
                 setCompras(data);
                 if (data.length === 0) setError("Planilha conectada! Nenhuma linha com dados válidos foi encontrada.");
             } else {
@@ -133,26 +138,38 @@ export default function App() {
         }
         setIsLoading(false);
     };
-
-    const handleAdd = async (newPurchase) => {
+    
+    const handleAddOrder = async (order) => {
         setIsLoading(true);
-        const newId = `compra-${Date.now()}`;
-        const newRow = Array(12).fill('');
-        newRow[0] = newPurchase.nome; newRow[3] = newPurchase.preco; newRow[5] = newPurchase.fornecedor; newRow[10] = newPurchase.status; newRow[11] = newId;
+        const rowsToAdd = order.products.map(product => {
+            const newId = `compra-${Date.now()}-${Math.random()}`;
+            const newRow = Array(12).fill('');
+            newRow[0] = product.nome;
+            newRow[1] = order.solicitante;
+            newRow[2] = order.comprador;
+            newRow[3] = product.preco;
+            newRow[4] = product.quantidade;
+            newRow[5] = order.fornecedor;
+            newRow[10] = 'Orçamento'; 
+            newRow[11] = newId;
+            return newRow;
+        });
+
         try {
             await gapi.client.sheets.spreadsheets.values.append({
                 spreadsheetId: SPREADSHEET_CONFIG.spreadsheetId,
                 range: `${SPREADSHEET_CONFIG.sheetName}!A:L`,
                 valueInputOption: 'USER_ENTERED',
-                resource: { values: [newRow] }
+                resource: { values: rowsToAdd }
             });
             await fetchSheetData();
-            setIsAddModalOpen(false);
+            setIsAddOrderModalOpen(false);
         } catch (err) {
-            setError("Falha ao adicionar a nova compra.");
+            setError("Falha ao adicionar o novo pedido.");
         }
         setIsLoading(false);
     };
+
 
     const handleEdit = async (id, updatedPurchase) => {
         const item = compras.find(c => c.id === id);
@@ -223,9 +240,9 @@ export default function App() {
                     <header className="flex justify-between items-center mb-8">
                         <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">Dashboard de Compras</h1>
                         <div className="flex items-center gap-4">
-                            <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300">
+                            <button onClick={() => setIsAddOrderModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300">
                                 <PlusCircleIcon className="h-5 w-5" />
-                                <span className="hidden sm:inline">Adicionar Compra</span>
+                                <span className="hidden sm:inline">Adicionar Pedido</span>
                             </button>
                             <button onClick={toggleTheme} className="p-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors duration-300">
                                 {theme === 'light' ? <MoonIcon className="h-5 w-5" /> : <SunIcon className="h-5 w-5" />}
@@ -241,8 +258,9 @@ export default function App() {
                                     <thead className="bg-slate-50 dark:bg-slate-700/50">
                                         <tr>
                                             <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Produto</th>
-                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Fornecedor</th>
-                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Preço</th>
+                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Qtd</th>
+                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Vl. Unit.</th>
+                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Total</th>
                                             <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Status</th>
                                             <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center">Ações</th>
                                         </tr>
@@ -250,19 +268,29 @@ export default function App() {
                                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                                         {compras.length > 0 ? (
                                             compras.map(compra => (
-                                                <tr key={compra.id || compra.rowIndex} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200">
-                                                    <td className="p-4 font-medium text-slate-900 dark:text-white">{compra.nome}</td>
-                                                    <td className="p-4 text-slate-500 dark:text-slate-400">{compra.fornecedor}</td>
-                                                    <td className="p-4 text-slate-500 dark:text-slate-400">{(compra.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                                    <td className="p-4 text-slate-500 dark:text-slate-400">{compra.status}</td>
-                                                    <td className="p-4"><div className="flex justify-center gap-3">
-                                                        <button onClick={() => { setCurrentPurchase(compra); setIsEditModalOpen(true); }} className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 transition-colors" title="Editar"><PencilIcon className="h-5 w-5" /></button>
-                                                        <button onClick={() => { setCurrentPurchase(compra); setIsDeleteModalOpen(true); }} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors" title="Excluir"><TrashIcon className="h-5 w-5" /></button>
-                                                    </div></td>
-                                                </tr>
+                                                <>
+                                                    <tr key={compra.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200">
+                                                        <td className="p-4 font-medium text-slate-900 dark:text-white">{compra.nome}</td>
+                                                        <td className="p-4 text-slate-500 dark:text-slate-400">{compra.quantidade}</td>
+                                                        <td className="p-4 text-slate-500 dark:text-slate-400">{(compra.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                                        <td className="p-4 text-slate-500 dark:text-slate-400 font-semibold">{(compra.preco * compra.quantidade).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                                        <td className="p-4 text-slate-500 dark:text-slate-400">{compra.status}</td>
+                                                        <td className="p-4">
+                                                            <div className="flex justify-center gap-3">
+                                                                <button onClick={() => { setCurrentPurchase(compra); setIsEditModalOpen(true); }} className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 transition-colors" title="Editar"><PencilIcon className="h-5 w-5" /></button>
+                                                                <button onClick={() => { setCurrentPurchase(compra); setIsDeleteModalOpen(true); }} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors" title="Excluir"><TrashIcon className="h-5 w-5" /></button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    <tr key={`${compra.id}-details`} className="bg-slate-50 dark:bg-slate-800/50">
+                                                        <td colSpan="6" className="p-2 px-4 text-xs text-slate-500 dark:text-slate-400">
+                                                            <strong>Solicitante:</strong> {compra.solicitante} &nbsp; | &nbsp; <strong>Fornecedor:</strong> {compra.fornecedor} &nbsp; | &nbsp; <strong>Comprador:</strong> {compra.comprador}
+                                                        </td>
+                                                    </tr>
+                                                </>
                                             ))
                                         ) : (
-                                            <tr><td colSpan="5" className="text-center p-8 text-slate-500 dark:text-slate-400">Nenhum dado para exibir.</td></tr>
+                                            <tr><td colSpan="6" className="text-center p-8 text-slate-500 dark:text-slate-400">Nenhum dado para exibir.</td></tr>
                                         )}
                                     </tbody>
                                 </table>
@@ -271,7 +299,7 @@ export default function App() {
                     )}
                 </div>
             )}
-            {isAddModalOpen && <AddEditForm onCancel={() => setIsAddModalOpen(false)} onSubmit={handleAdd} />}
+            {isAddOrderModalOpen && <AddOrderForm onCancel={() => setIsAddOrderModalOpen(false)} onSubmit={handleAddOrder} />}
             {isEditModalOpen && currentPurchase && <AddEditForm isEditMode purchase={currentPurchase} onCancel={() => setIsEditModalOpen(false)} onSubmit={(id, data) => handleEdit(id, data)} />}
             {isDeleteModalOpen && currentPurchase && <DeleteConfirmationModal onConfirm={() => handleDelete(currentPurchase.id)} onCancel={() => setIsDeleteModalOpen(false)} purchaseName={currentPurchase.nome} />}
         </div>
@@ -318,6 +346,66 @@ function AddEditForm({ isEditMode = false, purchase, onCancel, onSubmit }) {
         </div>
     );
 }
+
+function AddOrderForm({ onCancel, onSubmit }) {
+    const [header, setHeader] = useState({ solicitante: '', comprador: '', fornecedor: '' });
+    const [products, setProducts] = useState([{ nome: '', quantidade: 1, preco: '' }]);
+
+    const handleHeaderChange = (e) => setHeader(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    
+    const handleProductChange = (index, e) => {
+        const newProducts = [...products];
+        newProducts[index][e.target.name] = e.target.value;
+        setProducts(newProducts);
+    };
+    
+    const addProduct = () => setProducts([...products, { nome: '', quantidade: 1, preco: '' }]);
+    
+    const removeProduct = (index) => setProducts(products.filter((_, i) => i !== index));
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSubmit({ ...header, products });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl border border-slate-200 dark:border-slate-700">
+                <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Adicionar Pedido de Compra</h3>
+                    <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><XIcon className="h-6 w-6" /></button>
+                </div>
+                <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                    {/* Cabeçalho */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Solicitante*</label><input type="text" name="solicitante" value={header.solicitante} onChange={handleHeaderChange} required className="w-full input-style" /></div>
+                        <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Comprador</label><input type="text" name="comprador" value={header.comprador} onChange={handleHeaderChange} className="w-full input-style" /></div>
+                        <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fornecedor</label><input type="text" name="fornecedor" value={header.fornecedor} onChange={handleHeaderChange} className="w-full input-style" /></div>
+                    </div>
+
+                    {/* Produtos */}
+                    <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-200 pt-4 border-t border-slate-200 dark:border-slate-700 mt-4">Produtos</h4>
+                    {products.map((product, index) => (
+                        <div key={index} className="grid grid-cols-12 gap-2 items-center">
+                            <div className="col-span-5"><label className="block text-xs font-medium text-slate-600 dark:text-slate-400">Nome*</label><input type="text" name="nome" value={product.nome} onChange={(e) => handleProductChange(index, e)} required className="w-full input-style" /></div>
+                            <div className="col-span-2"><label className="block text-xs font-medium text-slate-600 dark:text-slate-400">Qtd*</label><input type="number" name="quantidade" value={product.quantidade} onChange={(e) => handleProductChange(index, e)} required className="w-full input-style" /></div>
+                            <div className="col-span-3"><label className="block text-xs font-medium text-slate-600 dark:text-slate-400">Preço*</label><input type="number" step="0.01" name="preco" value={product.preco} onChange={(e) => handleProductChange(index, e)} required className="w-full input-style" /></div>
+                            <div className="col-span-2 flex items-end">
+                                <button type="button" onClick={() => removeProduct(index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon className="h-5 w-5" /></button>
+                            </div>
+                        </div>
+                    ))}
+                    <button type="button" onClick={addProduct} className="text-sm text-blue-600 dark:text-blue-400 font-semibold hover:underline mt-2">Adicionar outro produto</button>
+                </div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 rounded-b-xl">
+                    <button type="button" onClick={onCancel} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">Cancelar</button>
+                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Salvar Pedido</button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
 
 function DeleteConfirmationModal({ onConfirm, onCancel, purchaseName }) {
     return (
