@@ -1,4 +1,16 @@
 import { useState, useEffect } from 'react';
+import {
+    Chart as ChartJS,
+    CategoryScale,
+    LinearScale,
+    BarElement,
+    Title,
+    Tooltip,
+    Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 // --- Ícones (SVG) ---
 const PlusCircleIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>);
@@ -30,6 +42,8 @@ export default function App() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [currentPurchase, setCurrentPurchase] = useState(null);
+    const [statusFilter, setStatusFilter] = useState('Todos');
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme') || 'light';
@@ -213,6 +227,31 @@ export default function App() {
         setIsLoading(false);
     };
 
+    const filteredCompras = compras.filter(c => {
+        const matchesStatus = statusFilter === 'Todos' || c.status === statusFilter;
+        const term = searchTerm.toLowerCase();
+        const matchesSearch = c.nome.toLowerCase().includes(term) || c.fornecedor.toLowerCase().includes(term);
+        return matchesStatus && matchesSearch;
+    });
+
+    const statusOrder = ['Orçamento', 'Pendente', 'Comprado'];
+    const statusTotals = filteredCompras.reduce((acc, c) => {
+        acc[c.status] = (acc[c.status] || 0) + c.preco;
+        return acc;
+    }, {});
+    const chartData = {
+        labels: statusOrder,
+        datasets: [{
+            label: 'Total em BRL',
+            data: statusOrder.map(s => statusTotals[s] || 0),
+            backgroundColor: ['#facc15', '#60a5fa', '#4ade80'],
+        }],
+    };
+    const chartOptions = {
+        responsive: true,
+        plugins: { title: { display: true, text: 'Total de Compras por Status' } },
+    };
+
     return (
         <div className="bg-slate-100 dark:bg-slate-900 min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300">
             {!isLoggedIn ? (
@@ -231,6 +270,28 @@ export default function App() {
                             </button>
                         </div>
                     </header>
+                    <div className="flex flex-col md:flex-row gap-4 mb-6">
+                        <input
+                            type="text"
+                            placeholder="Pesquisar..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <select
+                            value={statusFilter}
+                            onChange={e => setStatusFilter(e.target.value)}
+                            className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="Todos">Todos</option>
+                            <option value="Orçamento">Orçamento</option>
+                            <option value="Pendente">Pendente</option>
+                            <option value="Comprado">Comprado</option>
+                        </select>
+                    </div>
+                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 p-4 mb-8">
+                        <Bar data={chartData} options={chartOptions} />
+                    </div>
                     {error && <div className="bg-yellow-100 dark:bg-yellow-900/20 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-300 p-4 mb-6 rounded-md" role="alert"><p className="font-bold">Aviso:</p><p>{error}</p></div>}
                     {isLoading ? <p className="text-center p-8 text-slate-500 dark:text-slate-400">Sincronizando com a planilha...</p> : (
                         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
@@ -245,8 +306,8 @@ export default function App() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                    {compras.length > 0 ? (
-                                        compras.map(compra => (
+                                    {filteredCompras.length > 0 ? (
+                                        filteredCompras.map(compra => (
                                             <tr key={compra.id || compra.rowIndex} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200">
                                                 <td className="p-4 font-medium text-slate-900 dark:text-white">{compra.nome}</td>
                                                 <td className="p-4 text-slate-500 dark:text-slate-400">{compra.fornecedor}</td>
