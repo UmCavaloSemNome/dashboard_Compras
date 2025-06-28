@@ -29,7 +29,9 @@ export default function App() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
     const [currentPurchase, setCurrentPurchase] = useState(null);
+    const [columnIndexes, setColumnIndexes] = useState({});
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme') || 'light';
@@ -110,17 +112,40 @@ export default function App() {
             const rows = response.result.values || [];
             if (rows.length > 0) {
                 const header = rows[0].map(h => h.toLowerCase().trim());
-                const idColIndex = header.indexOf('id_unico');
+                const getIndex = (name) => header.indexOf(name);
+                const idColIndex = getIndex('id_unico');
                 if (idColIndex === -1) throw new Error('A coluna "ID_UNICO" não foi encontrada.');
-                const data = rows.slice(1).map((row, index) => ({
-                    rowIndex: index + 2,
-                    id: row[idColIndex],
-                    fullRow: row,
-                    nome: row[0] || '',
-                    preco: parseFloat((row[3] || '0').toString().replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) || 0,
-                    fornecedor: row[5] || '',
-                    status: row[10] || 'Orçamento',
-                })).filter(c => c.id && c.nome);
+                setColumnIndexes({
+                    nome: getIndex('produto'),
+                    quantidade: getIndex('quantidade'),
+                    vlUnid: getIndex('vl. unid'),
+                    valorTotal: getIndex('valor total'),
+                    solicitante: getIndex('solicitante'),
+                    fornecedor: getIndex('fornecedor'),
+                    faturamento: getIndex('faturamento'),
+                    comprador: getIndex('comprador'),
+                    dataCompra: getIndex('data da compra'),
+                    status: getIndex('status'),
+                    id: idColIndex,
+                });
+                const data = rows.slice(1).map((row, index) => {
+                    const parseNumber = (val) => parseFloat((val || '0').toString().replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) || 0;
+                    return {
+                        rowIndex: index + 2,
+                        id: row[idColIndex],
+                        fullRow: row,
+                        nome: row[getIndex('produto')] || row[0] || '',
+                        quantidade: parseNumber(row[getIndex('quantidade')]),
+                        vlUnid: parseNumber(row[getIndex('vl. unid')]),
+                        valorTotal: parseNumber(row[getIndex('valor total')]),
+                        solicitante: row[getIndex('solicitante')] || '',
+                        fornecedor: row[getIndex('fornecedor')] || '',
+                        faturamento: row[getIndex('faturamento')] || '',
+                        comprador: row[getIndex('comprador')] || '',
+                        dataCompra: row[getIndex('data da compra')] || '',
+                        status: row[getIndex('status')] || 'Orçamento',
+                    };
+                }).filter(c => c.id && c.nome);
                 setCompras(data);
                 if (data.length === 0) setError("Planilha conectada! Nenhuma linha com dados válidos foi encontrada.");
             } else {
@@ -137,7 +162,18 @@ export default function App() {
         setIsLoading(true);
         const newId = `compra-${Date.now()}`;
         const newRow = Array(12).fill('');
-        newRow[0] = newPurchase.nome; newRow[3] = newPurchase.preco; newRow[5] = newPurchase.fornecedor; newRow[10] = newPurchase.status; newRow[11] = newId;
+        const idx = columnIndexes;
+        if (idx.nome >= 0) newRow[idx.nome] = newPurchase.nome;
+        if (idx.quantidade >= 0) newRow[idx.quantidade] = newPurchase.quantidade;
+        if (idx.vlUnid >= 0) newRow[idx.vlUnid] = newPurchase.vlUnid;
+        if (idx.valorTotal >= 0) newRow[idx.valorTotal] = newPurchase.valorTotal || (parseFloat(newPurchase.quantidade || 0) * parseFloat(newPurchase.vlUnid || 0));
+        if (idx.solicitante >= 0) newRow[idx.solicitante] = newPurchase.solicitante;
+        if (idx.fornecedor >= 0) newRow[idx.fornecedor] = newPurchase.fornecedor;
+        if (idx.faturamento >= 0) newRow[idx.faturamento] = newPurchase.faturamento;
+        if (idx.comprador >= 0) newRow[idx.comprador] = newPurchase.comprador;
+        if (idx.dataCompra >= 0) newRow[idx.dataCompra] = newPurchase.dataCompra;
+        if (idx.status >= 0) newRow[idx.status] = newPurchase.status;
+        if (idx.id >= 0) newRow[idx.id] = newId;
         try {
             await gapi.client.sheets.spreadsheets.values.append({
                 spreadsheetId: SPREADSHEET_CONFIG.spreadsheetId,
@@ -153,17 +189,58 @@ export default function App() {
         setIsLoading(false);
     };
 
+    const handleAddBudget = async (headerInfo, items) => {
+        setIsLoading(true);
+        const budgetId = `orcamento-${Date.now()}`;
+        const rows = items.map(item => {
+            const row = Array(12).fill('');
+            const idx = columnIndexes;
+            if (idx.nome >= 0) row[idx.nome] = item.nome;
+            if (idx.quantidade >= 0) row[idx.quantidade] = item.quantidade;
+            if (idx.vlUnid >= 0) row[idx.vlUnid] = item.vlUnid;
+            if (idx.valorTotal >= 0) row[idx.valorTotal] = parseFloat(item.quantidade || 0) * parseFloat(item.vlUnid || 0);
+            if (idx.solicitante >= 0) row[idx.solicitante] = headerInfo.solicitante;
+            if (idx.fornecedor >= 0) row[idx.fornecedor] = item.fornecedor;
+            if (idx.faturamento >= 0) row[idx.faturamento] = '';
+            if (idx.comprador >= 0) row[idx.comprador] = headerInfo.comprador;
+            if (idx.dataCompra >= 0) row[idx.dataCompra] = new Date().toISOString().substring(0,10);
+            if (idx.status >= 0) row[idx.status] = 'Orçamento';
+            if (idx.id >= 0) row[idx.id] = budgetId;
+            return row;
+        });
+        try {
+            await gapi.client.sheets.spreadsheets.values.append({
+                spreadsheetId: SPREADSHEET_CONFIG.spreadsheetId,
+                range: `${SPREADSHEET_CONFIG.sheetName}!A:L`,
+                valueInputOption: 'USER_ENTERED',
+                resource: { values: rows }
+            });
+            await fetchSheetData();
+            setIsBudgetModalOpen(false);
+        } catch (err) {
+            setError('Falha ao adicionar o orçamento.');
+        }
+        setIsLoading(false);
+    };
+
     const handleEdit = async (id, updatedPurchase) => {
         const item = compras.find(c => c.id === id);
         if (!item) return;
         setIsLoading(true);
         const updatedRow = [...item.fullRow];
         while (updatedRow.length < 12) { updatedRow.push(''); }
-        updatedRow[0] = updatedPurchase.nome;
-        updatedRow[3] = updatedPurchase.preco;
-        updatedRow[5] = updatedPurchase.fornecedor;
-        updatedRow[10] = updatedPurchase.status;
-        updatedRow[11] = id;
+        const idx = columnIndexes;
+        if (idx.nome >= 0) updatedRow[idx.nome] = updatedPurchase.nome;
+        if (idx.quantidade >= 0) updatedRow[idx.quantidade] = updatedPurchase.quantidade;
+        if (idx.vlUnid >= 0) updatedRow[idx.vlUnid] = updatedPurchase.vlUnid;
+        if (idx.valorTotal >= 0) updatedRow[idx.valorTotal] = updatedPurchase.valorTotal || (parseFloat(updatedPurchase.quantidade || 0) * parseFloat(updatedPurchase.vlUnid || 0));
+        if (idx.solicitante >= 0) updatedRow[idx.solicitante] = updatedPurchase.solicitante;
+        if (idx.fornecedor >= 0) updatedRow[idx.fornecedor] = updatedPurchase.fornecedor;
+        if (idx.faturamento >= 0) updatedRow[idx.faturamento] = updatedPurchase.faturamento;
+        if (idx.comprador >= 0) updatedRow[idx.comprador] = updatedPurchase.comprador;
+        if (idx.dataCompra >= 0) updatedRow[idx.dataCompra] = updatedPurchase.dataCompra;
+        if (idx.status >= 0) updatedRow[idx.status] = updatedPurchase.status;
+        if (idx.id >= 0) updatedRow[idx.id] = id;
         try {
             const range = `${SPREADSHEET_CONFIG.sheetName}!A${item.rowIndex}:L${item.rowIndex}`;
             await gapi.client.sheets.spreadsheets.values.update({
@@ -226,6 +303,10 @@ export default function App() {
                                 <PlusCircleIcon className="h-5 w-5" />
                                 <span className="hidden sm:inline">Adicionar Compra</span>
                             </button>
+                            <button onClick={() => setIsBudgetModalOpen(true)} className="flex items-center gap-2 bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-green-700 transition-colors duration-300">
+                                <PlusCircleIcon className="h-5 w-5" />
+                                <span className="hidden sm:inline">Adicionar Orçamento</span>
+                            </button>
                             <button onClick={toggleTheme} className="p-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors duration-300">
                                 {theme === 'light' ? <MoonIcon className="h-5 w-5" /> : <SunIcon className="h-5 w-5" />}
                             </button>
@@ -238,8 +319,14 @@ export default function App() {
                                 <thead className="bg-slate-50 dark:bg-slate-700/50">
                                     <tr>
                                         <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Produto</th>
+                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Qtd</th>
+                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Vl. Unid</th>
+                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Valor Total</th>
+                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Solicitante</th>
                                         <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Fornecedor</th>
-                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Preço</th>
+                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Faturamento</th>
+                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Comprador</th>
+                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Data da Compra</th>
                                         <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Status</th>
                                         <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center">Ações</th>
                                     </tr>
@@ -249,8 +336,14 @@ export default function App() {
                                         compras.map(compra => (
                                             <tr key={compra.id || compra.rowIndex} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200">
                                                 <td className="p-4 font-medium text-slate-900 dark:text-white">{compra.nome}</td>
+                                                <td className="p-4 text-slate-500 dark:text-slate-400">{compra.quantidade}</td>
+                                                <td className="p-4 text-slate-500 dark:text-slate-400">{compra.vlUnid}</td>
+                                                <td className="p-4 text-slate-500 dark:text-slate-400">{compra.valorTotal}</td>
+                                                <td className="p-4 text-slate-500 dark:text-slate-400">{compra.solicitante}</td>
                                                 <td className="p-4 text-slate-500 dark:text-slate-400">{compra.fornecedor}</td>
-                                                <td className="p-4 text-slate-500 dark:text-slate-400">{(compra.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                                <td className="p-4 text-slate-500 dark:text-slate-400">{compra.faturamento}</td>
+                                                <td className="p-4 text-slate-500 dark:text-slate-400">{compra.comprador}</td>
+                                                <td className="p-4 text-slate-500 dark:text-slate-400">{compra.dataCompra}</td>
                                                 <td className="p-4 text-slate-500 dark:text-slate-400">{compra.status}</td>
                                                 <td className="p-4"><div className="flex justify-center gap-3">
                                                     <button onClick={() => { setCurrentPurchase(compra); setIsEditModalOpen(true); }} className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 transition-colors" title="Editar"><PencilIcon className="h-5 w-5" /></button>
@@ -259,7 +352,7 @@ export default function App() {
                                             </tr>
                                         ))
                                     ) : (
-                                        <tr><td colSpan="5" className="text-center p-8 text-slate-500 dark:text-slate-400">Nenhum dado para exibir.</td></tr>
+                                        <tr><td colSpan="11" className="text-center p-8 text-slate-500 dark:text-slate-400">Nenhum dado para exibir.</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -270,6 +363,7 @@ export default function App() {
             {isAddModalOpen && <AddEditForm onCancel={() => setIsAddModalOpen(false)} onSubmit={handleAdd} />}
             {isEditModalOpen && currentPurchase && <AddEditForm isEditMode purchase={currentPurchase} onCancel={() => setIsEditModalOpen(false)} onSubmit={(id, data) => handleEdit(id, data)} />}
             {isDeleteModalOpen && currentPurchase && <DeleteConfirmationModal onConfirm={() => handleDelete(currentPurchase.id)} onCancel={() => setIsDeleteModalOpen(false)} purchaseName={currentPurchase.nome} />}
+            {isBudgetModalOpen && <AddBudgetForm onCancel={() => setIsBudgetModalOpen(false)} onSubmit={handleAddBudget} />}
         </div>
     );
 }
@@ -287,11 +381,90 @@ function LoginScreen({ onLogin, error }) {
     );
 }
 
+function AddBudgetForm({ onCancel, onSubmit }) {
+    const [header, setHeader] = useState({ solicitante: '', comprador: '' });
+    const [items, setItems] = useState([{ nome: '', quantidade: '', vlUnid: '', fornecedor: '' }]);
+
+    const handleHeaderChange = (e) => setHeader(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const handleItemChange = (index, field, value) => {
+        setItems(prev => {
+            const newItems = [...prev];
+            newItems[index][field] = value;
+            return newItems;
+        });
+    };
+    const addItem = () => setItems(prev => [...prev, { nome: '', quantidade: '', vlUnid: '', fornecedor: '' }]);
+    const removeItem = (i) => setItems(prev => prev.filter((_, idx) => idx !== i));
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSubmit(header, items);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl border border-slate-200 dark:border-slate-700">
+                <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Adicionar Orçamento</h3>
+                    <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><XIcon className="h-6 w-6" /></button>
+                </div>
+                <div className="p-6 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Solicitante</label>
+                            <input type="text" name="solicitante" value={header.solicitante} onChange={handleHeaderChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Comprador</label>
+                            <input type="text" name="comprador" value={header.comprador} onChange={handleHeaderChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
+                        </div>
+                    </div>
+                    {items.map((item, idx) => (
+                        <div key={idx} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Produto</label>
+                                <input type="text" value={item.nome} onChange={(e) => handleItemChange(idx, 'nome', e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Qtd</label>
+                                <input type="number" value={item.quantidade} onChange={(e) => handleItemChange(idx, 'quantidade', e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Vl. Unid</label>
+                                <input type="number" step="0.01" value={item.vlUnid} onChange={(e) => handleItemChange(idx, 'vlUnid', e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
+                            </div>
+                            <div className="flex gap-2">
+                                <input type="text" placeholder="Fornecedor" value={item.fornecedor} onChange={(e) => handleItemChange(idx, 'fornecedor', e.target.value)} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" />
+                                {items.length > 1 && <button type="button" onClick={() => removeItem(idx)} className="text-red-600">&times;</button>}
+                            </div>
+                        </div>
+                    ))}
+                    <button type="button" onClick={addItem} className="mt-2 text-blue-600 hover:text-blue-800">+ Adicionar Item</button>
+                </div>
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 rounded-b-xl">
+                    <button type="button" onClick={onCancel} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">Cancelar</button>
+                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Salvar na Planilha</button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
 function AddEditForm({ isEditMode = false, purchase, onCancel, onSubmit }) {
-    const [formState, setFormState] = useState({ nome: '', fornecedor: '', preco: '', status: 'Orçamento' });
+    const [formState, setFormState] = useState({ nome: '', quantidade: '', vlUnid: '', valorTotal: '', solicitante: '', fornecedor: '', faturamento: '', comprador: '', dataCompra: '', status: 'Orçamento' });
     useEffect(() => {
         if (isEditMode && purchase) {
-            setFormState({ nome: purchase.nome, fornecedor: purchase.fornecedor, preco: purchase.preco, status: purchase.status, });
+            setFormState({
+                nome: purchase.nome,
+                quantidade: purchase.quantidade,
+                vlUnid: purchase.vlUnid,
+                valorTotal: purchase.valorTotal,
+                solicitante: purchase.solicitante,
+                fornecedor: purchase.fornecedor,
+                faturamento: purchase.faturamento,
+                comprador: purchase.comprador,
+                dataCompra: purchase.dataCompra,
+                status: purchase.status,
+            });
         }
     }, [isEditMode, purchase]);
     const handleChange = (e) => setFormState(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -302,8 +475,16 @@ function AddEditForm({ isEditMode = false, purchase, onCancel, onSubmit }) {
                 <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center"><h3 className="text-xl font-semibold text-slate-900 dark:text-white">{isEditMode ? 'Editar' : 'Adicionar'} Compra</h3><button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><XIcon className="h-6 w-6" /></button></div>
                 <div className="p-6 space-y-4">
                     <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome*</label><input type="text" name="nome" value={formState.nome} onChange={handleChange} required className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Quantidade</label><input type="number" name="quantidade" value={formState.quantidade} onChange={handleChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
+                        <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Vl. Unid</label><input type="number" step="0.01" name="vlUnid" value={formState.vlUnid} onChange={handleChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
+                    </div>
+                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Valor Total</label><input type="number" step="0.01" name="valorTotal" value={formState.valorTotal} onChange={handleChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Solicitante</label><input type="text" name="solicitante" value={formState.solicitante} onChange={handleChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
                     <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fornecedor</label><input type="text" name="fornecedor" value={formState.fornecedor} onChange={handleChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
-                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Preço*</label><input type="number" step="0.01" name="preco" value={formState.preco} onChange={handleChange} required className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Faturamento</label><input type="text" name="faturamento" value={formState.faturamento} onChange={handleChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Comprador</label><input type="text" name="comprador" value={formState.comprador} onChange={handleChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
+                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Data da Compra</label><input type="date" name="dataCompra" value={formState.dataCompra} onChange={handleChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
                     <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status</label><select name="status" value={formState.status} onChange={handleChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"><option>Orçamento</option><option>Pendente</option><option>Comprado</option></select></div>
                 </div>
                 <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 rounded-b-xl">
