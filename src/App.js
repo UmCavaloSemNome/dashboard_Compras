@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, Link } from 'react-router-dom';
+import { SunIcon, MoonIcon, GoogleIcon } from './icons';
 
-// --- Ícones (SVG) ---
-const PlusCircleIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>);
-const XIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
-const PencilIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>);
-const TrashIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><polyline points="10 11 10 17"></polyline><polyline points="14 11 14 17"></polyline></svg>);
-const GoogleIcon = () => (<svg viewBox="0 0 48 48" width="24px" height="24px"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C44.438,36.338,48,31,48,24C48,22.659,47.862,21.35,47.611,20.083z"></path></svg>);
-const SunIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>);
-const MoonIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>);
+import Overview from "./pages/Overview";
+import Workflow from "./pages/Workflow";
+import Suppliers from "./pages/Suppliers";
 
 // --- INSTRUÇÕES IMPORTANTES ---
 const SPREADSHEET_CONFIG = {
@@ -26,10 +23,6 @@ export default function App() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
     const [theme, setTheme] = useState('light');
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [currentPurchase, setCurrentPurchase] = useState(null);
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme') || 'light';
@@ -146,7 +139,6 @@ export default function App() {
                 resource: { values: [newRow] }
             });
             await fetchSheetData();
-            setIsAddModalOpen(false);
         } catch (err) {
             setError("Falha ao adicionar a nova compra.");
         }
@@ -173,7 +165,6 @@ export default function App() {
                 resource: { values: [updatedRow] },
             });
             await fetchSheetData();
-            setIsEditModalOpen(false);
         } catch (err) {
             setError("Falha ao editar a compra.");
         }
@@ -206,7 +197,6 @@ export default function App() {
                 }
             });
             await fetchSheetData();
-            setIsDeleteModalOpen(false);
         } catch (err) {
             setError("Falha ao deletar a compra.");
         }
@@ -218,58 +208,27 @@ export default function App() {
             {!isLoggedIn ? (
                 <LoginScreen onLogin={handleLogin} error={error} />
             ) : (
-                <div className="container mx-auto p-4 md:p-6 lg:p-8">
-                    <header className="flex justify-between items-center mb-8">
-                        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">Dashboard de Compras</h1>
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => setIsAddModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300">
-                                <PlusCircleIcon className="h-5 w-5" />
-                                <span className="hidden sm:inline">Adicionar Compra</span>
-                            </button>
-                            <button onClick={toggleTheme} className="p-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors duration-300">
-                                {theme === 'light' ? <MoonIcon className="h-5 w-5" /> : <SunIcon className="h-5 w-5" />}
-                            </button>
+                <>
+                    <nav className="bg-white dark:bg-slate-800 shadow">
+                        <div className="container mx-auto px-4 py-3 flex justify-between items-center">
+                            <div className="flex gap-4">
+                                <Link className="text-sm font-medium" to="/overview">Visão Geral Analítica</Link>
+                                <Link className="text-sm font-medium" to="/workflow">Fluxo de Trabalho Operacional</Link>
+                                <Link className="text-sm font-medium" to="/suppliers">Hub de Fornecedores</Link>
+                            </div>
+                            <button onClick={toggleTheme} className="p-2 rounded-full bg-slate-200 dark:bg-slate-700">{theme === "light" ? <MoonIcon className="h-5 w-5" /> : <SunIcon className="h-5 w-5" />}</button>
                         </div>
-                    </header>
-                    {error && <div className="bg-yellow-100 dark:bg-yellow-900/20 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-300 p-4 mb-6 rounded-md" role="alert"><p className="font-bold">Aviso:</p><p>{error}</p></div>}
-                    {isLoading ? <p className="text-center p-8 text-slate-500 dark:text-slate-400">Sincronizando com a planilha...</p> : (
-                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="bg-slate-50 dark:bg-slate-700/50">
-                                    <tr>
-                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Produto</th>
-                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Fornecedor</th>
-                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Preço</th>
-                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Status</th>
-                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                    {compras.length > 0 ? (
-                                        compras.map(compra => (
-                                            <tr key={compra.id || compra.rowIndex} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200">
-                                                <td className="p-4 font-medium text-slate-900 dark:text-white">{compra.nome}</td>
-                                                <td className="p-4 text-slate-500 dark:text-slate-400">{compra.fornecedor}</td>
-                                                <td className="p-4 text-slate-500 dark:text-slate-400">{(compra.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                                <td className="p-4 text-slate-500 dark:text-slate-400">{compra.status}</td>
-                                                <td className="p-4"><div className="flex justify-center gap-3">
-                                                    <button onClick={() => { setCurrentPurchase(compra); setIsEditModalOpen(true); }} className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 transition-colors" title="Editar"><PencilIcon className="h-5 w-5" /></button>
-                                                    <button onClick={() => { setCurrentPurchase(compra); setIsDeleteModalOpen(true); }} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors" title="Excluir"><TrashIcon className="h-5 w-5" /></button>
-                                                </div></td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr><td colSpan="5" className="text-center p-8 text-slate-500 dark:text-slate-400">Nenhum dado para exibir.</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
+                    </nav>
+                    <div className="container mx-auto p-4 md:p-6 lg:p-8">
+                        <Routes>
+                            <Route path="/overview" element={<Overview compras={compras} />} />
+                            <Route path="/workflow" element={<Workflow compras={compras} onAdd={handleAdd} onEdit={handleEdit} onDelete={handleDelete} isLoading={isLoading} error={error} theme={theme} toggleTheme={toggleTheme} />} />
+                            <Route path="/suppliers" element={<Suppliers compras={compras} />} />
+                            <Route path="*" element={<Navigate to="/overview" replace />} />
+                        </Routes>
+                    </div>
+                </>
             )}
-            {isAddModalOpen && <AddEditForm onCancel={() => setIsAddModalOpen(false)} onSubmit={handleAdd} />}
-            {isEditModalOpen && currentPurchase && <AddEditForm isEditMode purchase={currentPurchase} onCancel={() => setIsEditModalOpen(false)} onSubmit={(id, data) => handleEdit(id, data)} />}
-            {isDeleteModalOpen && currentPurchase && <DeleteConfirmationModal onConfirm={() => handleDelete(currentPurchase.id)} onCancel={() => setIsDeleteModalOpen(false)} purchaseName={currentPurchase.nome} />}
         </div>
     );
 }
@@ -287,48 +246,3 @@ function LoginScreen({ onLogin, error }) {
     );
 }
 
-function AddEditForm({ isEditMode = false, purchase, onCancel, onSubmit }) {
-    const [formState, setFormState] = useState({ nome: '', fornecedor: '', preco: '', status: 'Orçamento' });
-    useEffect(() => {
-        if (isEditMode && purchase) {
-            setFormState({ nome: purchase.nome, fornecedor: purchase.fornecedor, preco: purchase.preco, status: purchase.status, });
-        }
-    }, [isEditMode, purchase]);
-    const handleChange = (e) => setFormState(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    const handleSubmit = (e) => { e.preventDefault(); isEditMode ? onSubmit(purchase.id, formState) : onSubmit(formState); };
-    return (
-        <div className="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-700">
-                <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center"><h3 className="text-xl font-semibold text-slate-900 dark:text-white">{isEditMode ? 'Editar' : 'Adicionar'} Compra</h3><button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><XIcon className="h-6 w-6" /></button></div>
-                <div className="p-6 space-y-4">
-                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome*</label><input type="text" name="nome" value={formState.nome} onChange={handleChange} required className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
-                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fornecedor</label><input type="text" name="fornecedor" value={formState.fornecedor} onChange={handleChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
-                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Preço*</label><input type="number" step="0.01" name="preco" value={formState.preco} onChange={handleChange} required className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
-                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status</label><select name="status" value={formState.status} onChange={handleChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"><option>Orçamento</option><option>Pendente</option><option>Comprado</option></select></div>
-                </div>
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 rounded-b-xl">
-                    <button type="button" onClick={onCancel} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">Cancelar</button>
-                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Salvar na Planilha</button>
-                </div>
-            </form>
-        </div>
-    );
-}
-
-function DeleteConfirmationModal({ onConfirm, onCancel, purchaseName }) {
-    return (
-        <div className="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-700">
-                <div className="p-6 text-center">
-                    <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20"><TrashIcon className="h-6 w-6 text-red-600 dark:text-red-400" /></div>
-                    <h3 className="text-lg font-medium text-slate-900 dark:text-white mt-4">Excluir Registro</h3>
-                    <div className="mt-2 px-7 py-3"><p className="text-sm text-slate-500 dark:text-slate-400">Tem certeza que deseja excluir <span className="font-bold">"{purchaseName}"</span>?</p></div>
-                </div>
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-center gap-3 rounded-b-xl">
-                    <button type="button" onClick={onCancel} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 w-full transition-colors">Cancelar</button>
-                    <button type="button" onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 w-full transition-colors">Excluir</button>
-                </div>
-            </div>
-        </div>
-    );
-}
