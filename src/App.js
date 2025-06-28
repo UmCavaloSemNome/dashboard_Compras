@@ -1,55 +1,239 @@
-import { useState, useEffect } from 'react';
-import PurchaseChart from './components/PurchaseChart';
+import { useState, useEffect, useMemo } from 'react';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Doughnut } from 'recharts';
 
 // --- Ícones (SVG) ---
+const DollarSignIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>);
+const ShoppingCartIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>);
+const UsersIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>);
 const PlusCircleIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>);
-const XIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>);
-const PencilIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>);
-const TrashIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><polyline points="10 11 10 17"></polyline><polyline points="14 11 14 17"></polyline></svg>);
 const GoogleIcon = () => (<svg viewBox="0 0 48 48" width="24px" height="24px"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"></path><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"></path><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"></path><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571l6.19,5.238C44.438,36.338,48,31,48,24C48,22.659,47.862,21.35,47.611,20.083z"></path></svg>);
-const SunIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>);
-const MoonIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>);
 
-// --- INSTRUÇÕES IMPORTANTES ---
+// --- Configuração da Planilha ---
 const SPREADSHEET_CONFIG = {
     clientId: '375849344447-5qvtr7kho4umqb731272nt6mh8rrp9h7.apps.googleusercontent.com',
     spreadsheetId: '15s9u9s-5UOeCA-__P1170512Y3TIIypxdKWUdSIJLzo',
     sheetName: 'compras'
 };
 
-// --- Componente Principal: App ---
+const parseDate = (dateString) => {
+    if (!dateString) return null;
+    const parts = dateString.split('/');
+    if (parts.length === 3) {
+      // Formato DD/MM/YYYY
+      return new Date(parts[2], parts[1] - 1, parts[0]);
+    }
+    return new Date(dateString); // Fallback para outros formatos
+  };
+  
+// --- Componentes do Dashboard ---
+const StatCard = ({ title, value, icon, color }) => (
+    <div className="bg-slate-800 p-6 rounded-lg flex items-center gap-6">
+        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${color}`}>
+            {icon}
+        </div>
+        <div>
+            <p className="text-slate-400 text-sm">{title}</p>
+            <p className="text-white text-2xl font-bold">{value}</p>
+        </div>
+    </div>
+);
+
+const Dashboard = ({ compras, onAddOrder }) => {
+    const [filters, setFilters] = useState({ status: 'todos', solicitante: 'todos' });
+    const [uniqueRequesters, setUniqueRequesters] = useState([]);
+
+    useEffect(() => {
+        const requesters = [...new Set(compras.map(c => c.solicitante))];
+        setUniqueRequesters(requesters);
+    }, [compras]);
+
+    const filteredData = useMemo(() => {
+        return compras.filter(compra => {
+            const statusMatch = filters.status === 'todos' || compra.status.toLowerCase() === filters.status.toLowerCase();
+            const requesterMatch = filters.solicitante === 'todos' || compra.solicitante === filters.solicitante;
+            return statusMatch && requesterMatch;
+        });
+    }, [compras, filters]);
+
+    const cardStats = useMemo(() => {
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        const gastoNoMes = filteredData
+            .filter(c => {
+                if (!c.dataCompra) return false;
+                const dataCompra = parseDate(c.dataCompra);
+                return dataCompra.getMonth() === currentMonth && dataCompra.getFullYear() === currentYear;
+            })
+            .reduce((acc, c) => acc + (c.preco * c.quantidade), 0);
+            
+        return {
+            gastoMes: gastoNoMes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+            comprasEfetivadas: filteredData.filter(c => c.status.toLowerCase() === 'comprado').length,
+            produtosCotacao: filteredData.filter(c => c.status.toLowerCase() === 'cotando' || c.status.toLowerCase() === 'orçamento').length,
+        };
+    }, [filteredData]);
+
+    const monthlyChartData = useMemo(() => {
+        const monthly = {};
+        const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
+        filteredData.forEach(compra => {
+            if (compra.status.toLowerCase() === 'comprado' && compra.dataCompra) {
+                const date = parseDate(compra.dataCompra);
+                if (date) {
+                    const month = date.getMonth();
+                    const year = date.getFullYear();
+                    const key = `${year}-${String(month).padStart(2, '0')}`;
+                    if (!monthly[key]) {
+                        monthly[key] = { name: monthNames[month], value: 0 };
+                    }
+                    monthly[key].value += compra.preco * compra.quantidade;
+                }
+            }
+        });
+        return Object.values(monthly).sort((a,b) => monthNames.indexOf(a.name) - monthNames.indexOf(b.name));
+    }, [filteredData]);
+
+    const requesterChartData = useMemo(() => {
+        const byRequester = {};
+        filteredData.forEach(compra => {
+            const requester = compra.solicitante || "N/A";
+            if (!byRequester[requester]) {
+                byRequester[requester] = 0;
+            }
+            byRequester[requester] += compra.preco * compra.quantidade;
+        });
+        return Object.entries(byRequester).map(([name, value]) => ({ name, value }));
+    }, [filteredData]);
+    
+    return (
+        <div className="bg-slate-900 min-h-screen text-slate-300 font-sans p-8">
+            <header className="flex justify-between items-center mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold text-white">Dashboard de Compras</h1>
+                    <p className="text-slate-400">Bem-vindo(a) de volta!</p>
+                </div>
+                {/* Aqui podem entrar os ícones de notificação e perfil */}
+            </header>
+
+            <nav className="mb-8">
+                <div className="flex space-x-4 border-b border-slate-700">
+                    <button className="py-2 px-4 text-white border-b-2 border-blue-500 font-semibold">Visão Geral Analítica</button>
+                </div>
+            </nav>
+            
+            {/* Filtros */}
+            <div className="flex gap-4 mb-8">
+                <select onChange={e => setFilters({...filters, status: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md p-2">
+                    <option value="todos">Todos os Status</option>
+                    <option value="Comprado">Comprado</option>
+                    <option value="Pendente">Pendente</option>
+                    <option value="Orçamento">Orçamento</option>
+                    <option value="Cotando">Cotando</option>
+                </select>
+                <select onChange={e => setFilters({...filters, solicitante: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md p-2">
+                    <option value="todos">Todos os Solicitantes</option>
+                    {uniqueRequesters.map(req => <option key={req} value={req}>{req}</option>)}
+                </select>
+            </div>
+
+            {/* Cards de Estatísticas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <StatCard title="Gasto total no mês" value={cardStats.gastoMes} icon={<DollarSignIcon className="w-6 h-6 text-white"/>} color="bg-blue-500"/>
+                <StatCard title="Compras Efetivadas" value={cardStats.comprasEfetivadas} icon={<ShoppingCartIcon className="w-6 h-6 text-white"/>} color="bg-green-500"/>
+                <StatCard title="Produtos em Cotação" value={cardStats.produtosCotacao} icon={<UsersIcon className="w-6 h-6 text-white"/>} color="bg-yellow-500"/>
+                <div onClick={onAddOrder} className="bg-slate-800 p-6 rounded-lg flex items-center gap-6 cursor-pointer hover:bg-slate-700 transition-colors">
+                     <div className="w-12 h-12 rounded-full flex items-center justify-center bg-purple-500">
+                        <PlusCircleIcon className="w-6 h-6 text-white"/>
+                    </div>
+                    <div>
+                        <p className="text-white text-lg font-bold">Adicionar Pedido</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Gráficos */}
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+                <div className="lg:col-span-3 bg-slate-800 p-6 rounded-lg">
+                    <h2 className="text-xl font-semibold text-white mb-4">Compras por Mês (Status: Comprado)</h2>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={monthlyChartData}>
+                            <XAxis dataKey="name" stroke="#94a3b8"/>
+                            <YAxis stroke="#94a3b8"/>
+                            <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }} formatter={(value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)} />
+                            <Bar dataKey="value" fill="#3b82f6" />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </div>
+                <div className="lg:col-span-2 bg-slate-800 p-6 rounded-lg">
+                    <h2 className="text-xl font-semibold text-white mb-4">Gasto por Solicitante</h2>
+                    <ResponsiveContainer width="100%" height={300}>
+                        <PieChart>
+                            <Pie data={requesterChartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={80} fill="#8884d8" paddingAngle={5}>
+                                {requesterChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]} />)}
+                            </Pie>
+                            <Tooltip formatter={(value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)} />
+                            <Legend />
+                        </PieChart>
+                    </ResponsiveContainer>
+                </div>
+            </div>
+
+            {/* Tabela de Últimos Pedidos */}
+            <div className="bg-slate-800 p-6 rounded-lg">
+                <h2 className="text-xl font-semibold text-white mb-4">Últimos Pedidos</h2>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr>
+                                <th className="p-3 text-sm font-semibold text-slate-400">ID Único</th>
+                                <th className="p-3 text-sm font-semibold text-slate-400">Fornecedor</th>
+                                <th className="p-3 text-sm font-semibold text-slate-400">Data</th>
+                                <th className="p-3 text-sm font-semibold text-slate-400">Total</th>
+                                <th className="p-3 text-sm font-semibold text-slate-400">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filteredData.slice(0, 5).map((compra) => (
+                                <tr key={compra.id} className="border-b border-slate-700 hover:bg-slate-700/50">
+                                    <td className="p-3 text-white font-medium">{compra.id.split('-').pop()}</td>
+                                    <td className="p-3">{compra.fornecedor}</td>
+                                    <td className="p-3">{compra.dataCompra}</td>
+                                    <td className="p-3 font-medium">{(compra.preco * compra.quantidade).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                    <td className="p-3">
+                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                                            compra.status.toLowerCase() === 'comprado' ? 'bg-green-500/20 text-green-400' :
+                                            compra.status.toLowerCase() === 'pendente' ? 'bg-yellow-500/20 text-yellow-400' :
+                                            'bg-slate-600/50 text-slate-300'
+                                        }`}>
+                                            {compra.status}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 export default function App() {
+    // ... (toda a lógica de autenticação e manipulação de dados que já tínhamos)
     const [gapi, setGapi] = useState(null);
     const [google, setGoogle] = useState(null);
     const [tokenClient, setTokenClient] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [compras, setCompras] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [theme, setTheme] = useState('light');
     const [isAddOrderModalOpen, setIsAddOrderModalOpen] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [currentPurchase, setCurrentPurchase] = useState(null);
-
-    useEffect(() => {
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        setTheme(savedTheme);
-    }, []);
-
-    useEffect(() => {
-        if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-        localStorage.setItem('theme', theme);
-    }, [theme]);
-
-    const toggleTheme = () => {
-        setTheme(prevTheme => (prevTheme === 'light' ? 'dark' : 'light'));
-    };
-
+    
+    // Autenticação e busca de dados (lógica existente)
     useEffect(() => {
         const script = document.createElement('script');
         script.src = 'https://apis.google.com/js/api.js';
@@ -83,22 +267,17 @@ export default function App() {
                 });
                 setTokenClient(client);
             } catch (err) {
-                console.error("Erro ao inicializar cliente Google:", err);
                 setError("Falha ao inicializar o Google. Verifique o Client ID.");
             }
         }
     }, [gapi, google]);
 
     const handleLogin = () => {
-        if (SPREADSHEET_CONFIG.clientId === 'SEU_CLIENT_ID_VAI_AQUI') {
-            setError("Por favor, adicione o seu Client ID no código do ficheiro App.js.");
-            return;
-        }
         if (tokenClient) {
             tokenClient.requestAccessToken();
         }
     };
-
+    
     const fetchSheetData = async () => {
         setIsLoading(true);
         setError(null);
@@ -118,23 +297,22 @@ export default function App() {
                     rowIndex: index + 2,
                     id: row[idColIndex],
                     fullRow: row,
-                    nome: row[0] || '',
-                    quantidade: parseInt(row[1] || '1', 10),
-                    preco: parseFloat((row[2] || '0').toString().replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) || 0,
-                    solicitante: row[4] || 'Não informado',
-                    fornecedor: row[5] || '',
-                    comprador: row[7] || 'Não informado',
-                    status: row[10] || 'Orçamento',
+                    nome: row[0] || '',                                    // Coluna A
+                    quantidade: parseInt(row[1] || '1', 10),              // Coluna B
+                    preco: parseFloat((row[2] || '0').toString().replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) || 0, // Coluna C
+                    solicitante: row[4] || 'Não informado',                 // Coluna E
+                    fornecedor: row[5] || '',                               // Coluna F
+                    comprador: row[7] || 'Não informado',                   // Coluna H
+                    dataCompra: row[8] || null,                             // Coluna I
+                    status: row[10] || 'Orçamento',                         // Coluna K
                 })).filter(c => c.id && c.nome);
 
                 setCompras(data);
-                if (data.length === 0) setError("Planilha conectada! Nenhuma linha com dados válidos foi encontrada.");
             } else {
-                setError("Planilha conectada! A aba selecionada parece estar vazia.");
+                setError("Planilha conectada mas vazia.");
             }
         } catch (err) {
-            const errorMessage = err.result?.error?.message || err.message || 'Um erro desconhecido ocorreu.';
-            setError(`Erro ao carregar dados: ${errorMessage}`);
+            setError(`Erro ao carregar dados: ${err.message}`);
         }
         setIsLoading(false);
     };
@@ -144,15 +322,15 @@ export default function App() {
         const rowsToAdd = order.products.map(product => {
             const newId = `compra-${Date.now()}-${Math.random()}`;
             const newRow = Array(12).fill('');
-            newRow[0] = product.nome; // Coluna A: Produtos
-            newRow[1] = product.quantidade; // Coluna B: Quantidade
-            newRow[2] = product.preco; // Coluna C: Vl. Unit
-            // Coluna D (Valor Total) é uma fórmula na planilha, então deixamos em branco.
-            newRow[4] = order.solicitante; // Coluna E: Solicitante
-            newRow[5] = order.fornecedor; // Coluna F: Fornecedor
-            newRow[7] = order.comprador; // Coluna H: Comprador
-            newRow[10] = 'Orçamento'; // Coluna K: Status da compra
-            newRow[11] = newId; // Coluna L: ID_UNICO
+            newRow[0] = product.nome; // A
+            newRow[1] = product.quantidade; // B
+            newRow[2] = product.preco; // C
+            newRow[4] = order.solicitante; // E
+            newRow[5] = order.fornecedor; // F
+            newRow[7] = order.comprador; // H
+            newRow[8] = new Date().toLocaleDateString('pt-BR'); // I - Data da Compra
+            newRow[10] = 'Orçamento'; // K
+            newRow[11] = newId; // L
             return newRow;
         });
 
@@ -171,179 +349,32 @@ export default function App() {
         setIsLoading(false);
     };
 
+    if (isLoading) {
+        return <div className="bg-slate-900 min-h-screen flex items-center justify-center text-white">Carregando dados da planilha...</div>
+    }
 
-    const handleEdit = async (id, updatedPurchase) => {
-        const item = compras.find(c => c.id === id);
-        if (!item) return;
-        setIsLoading(true);
-        const updatedRow = [...item.fullRow];
-        while (updatedRow.length < 12) { updatedRow.push(''); }
-        updatedRow[0] = updatedPurchase.nome;
-        updatedRow[3] = updatedPurchase.preco;
-        updatedRow[5] = updatedPurchase.fornecedor;
-        updatedRow[10] = updatedPurchase.status;
-        updatedRow[11] = id;
-        try {
-            const range = `${SPREADSHEET_CONFIG.sheetName}!A${item.rowIndex}:L${item.rowIndex}`;
-            await gapi.client.sheets.spreadsheets.values.update({
-                spreadsheetId: SPREADSHEET_CONFIG.spreadsheetId,
-                range: range,
-                valueInputOption: 'USER_ENTERED',
-                resource: { values: [updatedRow] },
-            });
-            await fetchSheetData();
-            setIsEditModalOpen(false);
-        } catch (err) {
-            setError("Falha ao editar a compra.");
-        }
-        setIsLoading(false);
-    };
-
-    const handleDelete = async (id) => {
-        const item = compras.find(c => c.id === id);
-        if (!item) return;
-        setIsLoading(true);
-        try {
-            const sheetInfo = await gapi.client.sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_CONFIG.spreadsheetId });
-            const sheet = sheetInfo.result.sheets.find(s => s.properties.title === SPREADSHEET_CONFIG.sheetName);
-            if (!sheet) throw new Error("Aba da planilha não encontrada.");
-            const sheetId = sheet.properties.sheetId;
-
-            await gapi.client.sheets.spreadsheets.batchUpdate({
-                spreadsheetId: SPREADSHEET_CONFIG.spreadsheetId,
-                resource: {
-                    requests: [{
-                        deleteDimension: {
-                            range: {
-                                sheetId: sheetId,
-                                dimension: 'ROWS',
-                                startIndex: item.rowIndex - 1,
-                                endIndex: item.rowIndex
-                            }
-                        }
-                    }]
-                }
-            });
-            await fetchSheetData();
-            setIsDeleteModalOpen(false);
-        } catch (err) {
-            setError("Falha ao deletar a compra.");
-        }
-        setIsLoading(false);
-    };
+    if (!isLoggedIn) {
+        return <LoginScreen onLogin={handleLogin} error={error} />;
+    }
 
     return (
-        <div className="bg-slate-100 dark:bg-slate-900 min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300">
-            {!isLoggedIn ? (
-                <LoginScreen onLogin={handleLogin} error={error} />
-            ) : (
-                <div className="container mx-auto p-4 md:p-6 lg:p-8">
-                    <header className="flex justify-between items-center mb-8">
-                        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">Dashboard de Compras</h1>
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => setIsAddOrderModalOpen(true)} className="flex items-center gap-2 bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300">
-                                <PlusCircleIcon className="h-5 w-5" />
-                                <span className="hidden sm:inline">Adicionar Pedido</span>
-                            </button>
-                            <button onClick={toggleTheme} className="p-2 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 transition-colors duration-300">
-                                {theme === 'light' ? <MoonIcon className="h-5 w-5" /> : <SunIcon className="h-5 w-5" />}
-                            </button>
-                        </div>
-                    </header>
-                    {error && <div className="bg-yellow-100 dark:bg-yellow-900/20 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-300 p-4 mb-6 rounded-md" role="alert"><p className="font-bold">Aviso:</p><p>{error}</p></div>}
-                    {isLoading ? <p className="text-center p-8 text-slate-500 dark:text-slate-400">Sincronizando com a planilha...</p> : (
-                        <>
-                            <PurchaseChart data={compras} />
-                            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-x-auto mt-8">
-                                <table className="w-full text-left">
-                                    <thead className="bg-slate-50 dark:bg-slate-700/50">
-                                        <tr>
-                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Produto</th>
-                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Qtd</th>
-                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Vl. Unit.</th>
-                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Total</th>
-                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Status</th>
-                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center">Ações</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                        {compras.length > 0 ? (
-                                            compras.map(compra => (
-                                                <>
-                                                    <tr key={compra.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200">
-                                                        <td className="p-4 font-medium text-slate-900 dark:text-white">{compra.nome}</td>
-                                                        <td className="p-4 text-slate-500 dark:text-slate-400">{compra.quantidade}</td>
-                                                        <td className="p-4 text-slate-500 dark:text-slate-400">{(compra.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                                        <td className="p-4 text-slate-500 dark:text-slate-400 font-semibold">{(compra.preco * compra.quantidade).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                                        <td className="p-4 text-slate-500 dark:text-slate-400">{compra.status}</td>
-                                                        <td className="p-4">
-                                                            <div className="flex justify-center gap-3">
-                                                                <button onClick={() => { setCurrentPurchase(compra); setIsEditModalOpen(true); }} className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 transition-colors" title="Editar"><PencilIcon className="h-5 w-5" /></button>
-                                                                <button onClick={() => { setCurrentPurchase(compra); setIsDeleteModalOpen(true); }} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors" title="Excluir"><TrashIcon className="h-5 w-5" /></button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                    <tr key={`${compra.id}-details`} className="bg-slate-50 dark:bg-slate-800/50">
-                                                        <td colSpan="6" className="p-2 px-4 text-xs text-slate-500 dark:text-slate-400">
-                                                            <strong>Solicitante:</strong> {compra.solicitante} &nbsp; | &nbsp; <strong>Fornecedor:</strong> {compra.fornecedor} &nbsp; | &nbsp; <strong>Comprador:</strong> {compra.comprador}
-                                                        </td>
-                                                    </tr>
-                                                </>
-                                            ))
-                                        ) : (
-                                            <tr><td colSpan="6" className="text-center p-8 text-slate-500 dark:text-slate-400">Nenhum dado para exibir.</td></tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </>
-                    )}
-                </div>
-            )}
+        <>
+            <Dashboard compras={compras} onAddOrder={() => setIsAddOrderModalOpen(true)} />
             {isAddOrderModalOpen && <AddOrderForm onCancel={() => setIsAddOrderModalOpen(false)} onSubmit={handleAddOrder} />}
-            {isEditModalOpen && currentPurchase && <AddEditForm isEditMode purchase={currentPurchase} onCancel={() => setIsEditModalOpen(false)} onSubmit={(id, data) => handleEdit(id, data)} />}
-            {isDeleteModalOpen && currentPurchase && <DeleteConfirmationModal onConfirm={() => handleDelete(currentPurchase.id)} onCancel={() => setIsDeleteModalOpen(false)} purchaseName={currentPurchase.nome} />}
-        </div>
+        </>
     );
 }
 
+// Estes componentes auxiliares podem continuar no final do arquivo
 function LoginScreen({ onLogin, error }) {
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen text-center p-4">
-            <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2">Dashboard de Compras</h1>
-            <p className="text-lg text-slate-600 dark:text-slate-400 mb-8">Faça login para aceder à sua planilha.</p>
+        <div className="bg-slate-900 flex flex-col items-center justify-center min-h-screen text-center p-4">
+            <h1 className="text-4xl font-bold text-white mb-2">Dashboard de Compras</h1>
+            <p className="text-lg text-slate-400 mb-8">Faça login para aceder à sua planilha.</p>
             <button onClick={onLogin} className="flex items-center justify-center gap-3 py-3 px-6 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-105">
                 <GoogleIcon /> Login com Google
             </button>
             {error && <p className="text-red-500 dark:text-red-400 text-sm mt-4">{error}</p>}
-        </div>
-    );
-}
-
-function AddEditForm({ isEditMode = false, purchase, onCancel, onSubmit }) {
-    const [formState, setFormState] = useState({ nome: '', fornecedor: '', preco: '', status: 'Orçamento' });
-    useEffect(() => {
-        if (isEditMode && purchase) {
-            setFormState({ nome: purchase.nome, fornecedor: purchase.fornecedor, preco: purchase.preco, status: purchase.status, });
-        }
-    }, [isEditMode, purchase]);
-    const handleChange = (e) => setFormState(prev => ({ ...prev, [e.target.name]: e.target.value }));
-    const handleSubmit = (e) => { e.preventDefault(); isEditMode ? onSubmit(purchase.id, formState) : onSubmit(formState); };
-    return (
-        <div className="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-lg border border-slate-200 dark:border-slate-700">
-                <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center"><h3 className="text-xl font-semibold text-slate-900 dark:text-white">{isEditMode ? 'Editar' : 'Adicionar'} Compra</h3><button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><XIcon className="h-6 w-6" /></button></div>
-                <div className="p-6 space-y-4">
-                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Nome*</label><input type="text" name="nome" value={formState.nome} onChange={handleChange} required className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
-                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fornecedor</label><input type="text" name="fornecedor" value={formState.fornecedor} onChange={handleChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
-                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Preço*</label><input type="number" step="0.01" name="preco" value={formState.preco} onChange={handleChange} required className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" /></div>
-                    <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Status</label><select name="status" value={formState.status} onChange={handleChange} className="w-full px-3 py-2 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500"><option>Orçamento</option><option>Pendente</option><option>Comprado</option></select></div>
-                </div>
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 rounded-b-xl">
-                    <button type="button" onClick={onCancel} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">Cancelar</button>
-                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Salvar na Planilha</button>
-                </div>
-            </form>
         </div>
     );
 }
@@ -369,59 +400,42 @@ function AddOrderForm({ onCancel, onSubmit }) {
         onSubmit({ ...header, products });
     };
 
+    const inputStyle = "w-full px-3 py-2 bg-slate-700 text-white border border-slate-600 rounded-lg focus:ring-blue-500 focus:border-blue-500";
+
     return (
-        <div className="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl border border-slate-200 dark:border-slate-700">
-                <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                    <h3 className="text-xl font-semibold text-slate-900 dark:text-white">Adicionar Pedido de Compra</h3>
-                    <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"><XIcon className="h-6 w-6" /></button>
+        <div className="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <form onSubmit={handleSubmit} className="bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl border border-slate-700">
+                <div className="p-6 border-b border-slate-700 flex justify-between items-center">
+                    <h3 className="text-xl font-semibold text-white">Adicionar Pedido de Compra</h3>
+                    <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-300">&times;</button>
                 </div>
                 <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                     {/* Cabeçalho */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Solicitante*</label><input type="text" name="solicitante" value={header.solicitante} onChange={handleHeaderChange} required className="w-full input-style" /></div>
-                        <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Comprador</label><input type="text" name="comprador" value={header.comprador} onChange={handleHeaderChange} className="w-full input-style" /></div>
-                        <div><label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Fornecedor</label><input type="text" name="fornecedor" value={header.fornecedor} onChange={handleHeaderChange} className="w-full input-style" /></div>
+                        <div><label className="block text-sm font-medium text-slate-400 mb-1">Solicitante*</label><input type="text" name="solicitante" value={header.solicitante} onChange={handleHeaderChange} required className={inputStyle} /></div>
+                        <div><label className="block text-sm font-medium text-slate-400 mb-1">Comprador</label><input type="text" name="comprador" value={header.comprador} onChange={handleHeaderChange} className={inputStyle} /></div>
+                        <div><label className="block text-sm font-medium text-slate-400 mb-1">Fornecedor</label><input type="text" name="fornecedor" value={header.fornecedor} onChange={handleHeaderChange} className={inputStyle} /></div>
                     </div>
 
                     {/* Produtos */}
-                    <h4 className="text-lg font-semibold text-slate-800 dark:text-slate-200 pt-4 border-t border-slate-200 dark:border-slate-700 mt-4">Produtos</h4>
+                    <h4 className="text-lg font-semibold text-white pt-4 border-t border-slate-700 mt-4">Produtos</h4>
                     {products.map((product, index) => (
                         <div key={index} className="grid grid-cols-12 gap-2 items-center">
-                            <div className="col-span-5"><label className="block text-xs font-medium text-slate-600 dark:text-slate-400">Nome*</label><input type="text" name="nome" value={product.nome} onChange={(e) => handleProductChange(index, e)} required className="w-full input-style" /></div>
-                            <div className="col-span-2"><label className="block text-xs font-medium text-slate-600 dark:text-slate-400">Qtd*</label><input type="number" name="quantidade" value={product.quantidade} onChange={(e) => handleProductChange(index, e)} required className="w-full input-style" /></div>
-                            <div className="col-span-3"><label className="block text-xs font-medium text-slate-600 dark:text-slate-400">Preço*</label><input type="number" step="0.01" name="preco" value={product.preco} onChange={(e) => handleProductChange(index, e)} required className="w-full input-style" /></div>
+                            <div className="col-span-5"><label className="block text-xs font-medium text-slate-400">Nome*</label><input type="text" name="nome" value={product.nome} onChange={(e) => handleProductChange(index, e)} required className={inputStyle} /></div>
+                            <div className="col-span-2"><label className="block text-xs font-medium text-slate-400">Qtd*</label><input type="number" name="quantidade" value={product.quantidade} onChange={(e) => handleProductChange(index, e)} required className={inputStyle} /></div>
+                            <div className="col-span-3"><label className="block text-xs font-medium text-slate-400">Preço*</label><input type="number" step="0.01" name="preco" value={product.preco} onChange={(e) => handleProductChange(index, e)} required className={inputStyle} /></div>
                             <div className="col-span-2 flex items-end">
-                                <button type="button" onClick={() => removeProduct(index)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon className="h-5 w-5" /></button>
+                                <button type="button" onClick={() => removeProduct(index)} className="text-red-500 hover:text-red-700 p-2">Remover</button>
                             </div>
                         </div>
                     ))}
-                    <button type="button" onClick={addProduct} className="text-sm text-blue-600 dark:text-blue-400 font-semibold hover:underline mt-2">Adicionar outro produto</button>
+                    <button type="button" onClick={addProduct} className="text-sm text-blue-400 font-semibold hover:underline mt-2">Adicionar outro produto</button>
                 </div>
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3 rounded-b-xl">
-                    <button type="button" onClick={onCancel} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">Cancelar</button>
+                <div className="p-4 bg-slate-900/50 border-t border-slate-700 flex justify-end gap-3 rounded-b-xl">
+                    <button type="button" onClick={onCancel} className="px-4 py-2 bg-slate-700 text-slate-200 font-semibold rounded-lg hover:bg-slate-600 transition-colors">Cancelar</button>
                     <button type="submit" className="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">Salvar Pedido</button>
                 </div>
             </form>
-        </div>
-    );
-}
-
-
-function DeleteConfirmationModal({ onConfirm, onCancel, purchaseName }) {
-    return (
-        <div className="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-700">
-                <div className="p-6 text-center">
-                    <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/20"><TrashIcon className="h-6 w-6 text-red-600 dark:text-red-400" /></div>
-                    <h3 className="text-lg font-medium text-slate-900 dark:text-white mt-4">Excluir Registro</h3>
-                    <div className="mt-2 px-7 py-3"><p className="text-sm text-slate-500 dark:text-slate-400">Tem certeza que deseja excluir <span className="font-bold">"{purchaseName}"</span>?</p></div>
-                </div>
-                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-200 dark:border-slate-700 flex justify-center gap-3 rounded-b-xl">
-                    <button type="button" onClick={onCancel} className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 w-full transition-colors">Cancelar</button>
-                    <button type="button" onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 w-full transition-colors">Excluir</button>
-                </div>
-            </div>
         </div>
     );
 }
