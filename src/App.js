@@ -30,6 +30,8 @@ export default function App() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [currentPurchase, setCurrentPurchase] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('Todos');
 
     useEffect(() => {
         const savedTheme = localStorage.getItem('theme') || 'light';
@@ -213,6 +215,13 @@ export default function App() {
         setIsLoading(false);
     };
 
+    const filteredCompras = compras.filter(c => {
+        const textMatch = (c.nome || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (c.fornecedor || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const statusMatch = statusFilter === 'Todos' || c.status === statusFilter;
+        return textMatch && statusMatch;
+    });
+
     return (
         <div className="bg-slate-100 dark:bg-slate-900 min-h-screen font-sans text-slate-800 dark:text-slate-200 transition-colors duration-300">
             {!isLoggedIn ? (
@@ -232,6 +241,25 @@ export default function App() {
                         </div>
                     </header>
                     {error && <div className="bg-yellow-100 dark:bg-yellow-900/20 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-300 p-4 mb-6 rounded-md" role="alert"><p className="font-bold">Aviso:</p><p>{error}</p></div>}
+                    <div className="mb-6 flex flex-col sm:flex-row gap-4">
+                        <input
+                            type="text"
+                            placeholder="Filtrar por nome ou fornecedor"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="flex-1 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <select
+                            value={statusFilter}
+                            onChange={e => setStatusFilter(e.target.value)}
+                            className="px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="Todos">Todos</option>
+                            <option value="Orçamento">Orçamento</option>
+                            <option value="Pendente">Pendente</option>
+                            <option value="Comprado">Comprado</option>
+                        </select>
+                    </div>
                     {isLoading ? <p className="text-center p-8 text-slate-500 dark:text-slate-400">Sincronizando com a planilha...</p> : (
                         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
                             <table className="w-full text-left">
@@ -245,8 +273,8 @@ export default function App() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                    {compras.length > 0 ? (
-                                        compras.map(compra => (
+                                    {filteredCompras.length > 0 ? (
+                                        filteredCompras.map(compra => (
                                             <tr key={compra.id || compra.rowIndex} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200">
                                                 <td className="p-4 font-medium text-slate-900 dark:text-white">{compra.nome}</td>
                                                 <td className="p-4 text-slate-500 dark:text-slate-400">{compra.fornecedor}</td>
@@ -259,7 +287,7 @@ export default function App() {
                                             </tr>
                                         ))
                                     ) : (
-                                        <tr><td colSpan="5" className="text-center p-8 text-slate-500 dark:text-slate-400">Nenhum dado para exibir.</td></tr>
+                                        <tr><td colSpan="5" className="text-center p-8 text-slate-500 dark:text-slate-400">Nenhum resultado encontrado.</td></tr>
                                     )}
                                 </tbody>
                             </table>
