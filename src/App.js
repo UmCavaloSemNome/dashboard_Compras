@@ -119,11 +119,11 @@ export default function App() {
                     id: row[idColIndex],
                     fullRow: row,
                     nome: row[0] || '',
-                    solicitante: row[1] || 'Não informado',
-                    comprador: row[2] || 'Não informado',
-                    preco: parseFloat((row[3] || '0').toString().replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) || 0,
-                    quantidade: parseInt(row[4] || '1', 10),
+                    quantidade: parseInt(row[1] || '1', 10),
+                    preco: parseFloat((row[2] || '0').toString().replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) || 0,
+                    solicitante: row[4] || 'Não informado',
                     fornecedor: row[5] || '',
+                    comprador: row[7] || 'Não informado',
                     status: row[10] || 'Orçamento',
                 })).filter(c => c.id && c.nome);
 
@@ -144,14 +144,15 @@ export default function App() {
         const rowsToAdd = order.products.map(product => {
             const newId = `compra-${Date.now()}-${Math.random()}`;
             const newRow = Array(12).fill('');
-            newRow[0] = product.nome;
-            newRow[1] = order.solicitante;
-            newRow[2] = order.comprador;
-            newRow[3] = product.preco;
-            newRow[4] = product.quantidade;
-            newRow[5] = order.fornecedor;
-            newRow[10] = 'Orçamento'; 
-            newRow[11] = newId;
+            newRow[0] = product.nome; // Coluna A: Produtos
+            newRow[1] = product.quantidade; // Coluna B: Quantidade
+            newRow[2] = product.preco; // Coluna C: Vl. Unit
+            // Coluna D (Valor Total) é uma fórmula na planilha, então deixamos em branco.
+            newRow[4] = order.solicitante; // Coluna E: Solicitante
+            newRow[5] = order.fornecedor; // Coluna F: Fornecedor
+            newRow[7] = order.comprador; // Coluna H: Comprador
+            newRow[10] = 'Orçamento'; // Coluna K: Status da compra
+            newRow[11] = newId; // Coluna L: ID_UNICO
             return newRow;
         });
 
