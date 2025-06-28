@@ -2,6 +2,18 @@
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
+## Environment Variables
+
+Before running the project you need to create a `.env` file in the root of the repository with the following variables:
+
+```
+REACT_APP_CLIENT_ID=your_google_client_id
+REACT_APP_SPREADSHEET_ID=your_spreadsheet_id
+REACT_APP_SHEET_NAME=your_sheet_name
+```
+
+These values are used to connect to your Google Spreadsheet.
+
 ## Available Scripts
 
 In the project directory, you can run:
