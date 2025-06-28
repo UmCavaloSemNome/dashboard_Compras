@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, Doughnut } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // --- Ícones (SVG) ---
 const DollarSignIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>);
@@ -16,13 +16,19 @@ const SPREADSHEET_CONFIG = {
 };
 
 const parseDate = (dateString) => {
-    if (!dateString) return null;
+    if (!dateString || typeof dateString !== 'string') return null;
     const parts = dateString.split('/');
     if (parts.length === 3) {
-      // Formato DD/MM/YYYY
-      return new Date(parts[2], parts[1] - 1, parts[0]);
+      const [day, month, year] = parts.map(p => parseInt(p, 10));
+      // new Date(year, monthIndex, day)
+      const date = new Date(year, month - 1, day);
+      if (!isNaN(date.getTime())) {
+          return date;
+      }
     }
-    return new Date(dateString); // Fallback para outros formatos
+    // Fallback para outros formatos que o `new Date` possa entender
+    const fallbackDate = new Date(dateString);
+    return isNaN(fallbackDate.getTime()) ? null : fallbackDate;
   };
   
 // --- Componentes do Dashboard ---
@@ -56,56 +62,70 @@ const Dashboard = ({ compras, onAddOrder }) => {
     }, [compras, filters]);
 
     const cardStats = useMemo(() => {
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
+        try {
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
 
-        const gastoNoMes = filteredData
-            .filter(c => {
-                if (!c.dataCompra) return false;
-                const dataCompra = parseDate(c.dataCompra);
-                return dataCompra.getMonth() === currentMonth && dataCompra.getFullYear() === currentYear;
-            })
-            .reduce((acc, c) => acc + (c.preco * c.quantidade), 0);
-            
-        return {
-            gastoMes: gastoNoMes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-            comprasEfetivadas: filteredData.filter(c => c.status.toLowerCase() === 'comprado').length,
-            produtosCotacao: filteredData.filter(c => c.status.toLowerCase() === 'cotando' || c.status.toLowerCase() === 'orçamento').length,
-        };
+            const gastoNoMes = filteredData
+                .filter(c => {
+                    const dataCompra = parseDate(c.dataCompra);
+                    return dataCompra && dataCompra.getMonth() === currentMonth && dataCompra.getFullYear() === currentYear;
+                })
+                .reduce((acc, c) => acc + (c.preco * c.quantidade), 0);
+                
+            return {
+                gastoMes: gastoNoMes.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+                comprasEfetivadas: filteredData.filter(c => c.status.toLowerCase() === 'comprado').length,
+                produtosCotacao: filteredData.filter(c => c.status.toLowerCase() === 'cotando' || c.status.toLowerCase() === 'orçamento').length,
+            };
+        } catch (e) {
+            console.error("Erro ao calcular stats dos cards:", e);
+            return { gastoMes: 'Erro', comprasEfetivadas: 'Erro', produtosCotacao: 'Erro' };
+        }
     }, [filteredData]);
 
     const monthlyChartData = useMemo(() => {
-        const monthly = {};
-        const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+        try {
+            const monthly = {};
+            const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
-        filteredData.forEach(compra => {
-            if (compra.status.toLowerCase() === 'comprado' && compra.dataCompra) {
-                const date = parseDate(compra.dataCompra);
-                if (date) {
-                    const month = date.getMonth();
-                    const year = date.getFullYear();
-                    const key = `${year}-${String(month).padStart(2, '0')}`;
-                    if (!monthly[key]) {
-                        monthly[key] = { name: monthNames[month], value: 0 };
+            filteredData.forEach(compra => {
+                if (compra.status.toLowerCase() === 'comprado') {
+                    const date = parseDate(compra.dataCompra);
+                    if (date) {
+                        const month = date.getMonth();
+                        const year = date.getFullYear();
+                        const key = `${year}-${String(month).padStart(2, '0')}`;
+                        if (!monthly[key]) {
+                            monthly[key] = { name: `${monthNames[month]}/${year.toString().slice(-2)}`, value: 0 };
+                        }
+                        monthly[key].value += compra.preco * compra.quantidade;
                     }
-                    monthly[key].value += compra.preco * compra.quantidade;
                 }
-            }
-        });
-        return Object.values(monthly).sort((a,b) => monthNames.indexOf(a.name) - monthNames.indexOf(b.name));
+            });
+            return Object.values(monthly).sort((a,b) => new Date(a.name.split('/')[1], monthNames.indexOf(a.name.split('/')[0])) - new Date(b.name.split('/')[1], monthNames.indexOf(b.name.split('/')[0])));
+        } catch (e) {
+            console.error("Erro ao calcular dados do gráfico mensal:", e);
+            return [];
+        }
     }, [filteredData]);
 
     const requesterChartData = useMemo(() => {
-        const byRequester = {};
-        filteredData.forEach(compra => {
-            const requester = compra.solicitante || "N/A";
-            if (!byRequester[requester]) {
-                byRequester[requester] = 0;
-            }
-            byRequester[requester] += compra.preco * compra.quantidade;
-        });
-        return Object.entries(byRequester).map(([name, value]) => ({ name, value }));
+        try {
+            const byRequester = {};
+            filteredData.forEach(compra => {
+                const requester = compra.solicitante || "N/A";
+                if (!byRequester[requester]) {
+                    byRequester[requester] = 0;
+                }
+                byRequester[requester] += compra.preco * compra.quantidade;
+            });
+            return Object.entries(byRequester).map(([name, value]) => ({ name, value }));
+        } catch (e) {
+            console.error("Erro ao calcular dados do gráfico de solicitante:", e);
+            return [];
+        }
     }, [filteredData]);
     
     return (
@@ -115,7 +135,6 @@ const Dashboard = ({ compras, onAddOrder }) => {
                     <h1 className="text-3xl font-bold text-white">Dashboard de Compras</h1>
                     <p className="text-slate-400">Bem-vindo(a) de volta!</p>
                 </div>
-                {/* Aqui podem entrar os ícones de notificação e perfil */}
             </header>
 
             <nav className="mb-8">
@@ -124,7 +143,6 @@ const Dashboard = ({ compras, onAddOrder }) => {
                 </div>
             </nav>
             
-            {/* Filtros */}
             <div className="flex gap-4 mb-8">
                 <select onChange={e => setFilters({...filters, status: e.target.value})} className="bg-slate-800 border border-slate-700 rounded-md p-2">
                     <option value="todos">Todos os Status</option>
@@ -139,7 +157,6 @@ const Dashboard = ({ compras, onAddOrder }) => {
                 </select>
             </div>
 
-            {/* Cards de Estatísticas */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <StatCard title="Gasto total no mês" value={cardStats.gastoMes} icon={<DollarSignIcon className="w-6 h-6 text-white"/>} color="bg-blue-500"/>
                 <StatCard title="Compras Efetivadas" value={cardStats.comprasEfetivadas} icon={<ShoppingCartIcon className="w-6 h-6 text-white"/>} color="bg-green-500"/>
@@ -154,14 +171,13 @@ const Dashboard = ({ compras, onAddOrder }) => {
                 </div>
             </div>
 
-            {/* Gráficos */}
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
                 <div className="lg:col-span-3 bg-slate-800 p-6 rounded-lg">
                     <h2 className="text-xl font-semibold text-white mb-4">Compras por Mês (Status: Comprado)</h2>
                     <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={monthlyChartData}>
                             <XAxis dataKey="name" stroke="#94a3b8"/>
-                            <YAxis stroke="#94a3b8"/>
+                            <YAxis stroke="#94a3b8" tickFormatter={(value) => new Intl.NumberFormat('pt-BR', { notation: 'compact', compactDisplay: 'short' }).format(value)} />
                             <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }} formatter={(value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)} />
                             <Bar dataKey="value" fill="#3b82f6" />
                         </BarChart>
@@ -180,8 +196,7 @@ const Dashboard = ({ compras, onAddOrder }) => {
                     </ResponsiveContainer>
                 </div>
             </div>
-
-            {/* Tabela de Últimos Pedidos */}
+            
             <div className="bg-slate-800 p-6 rounded-lg">
                 <h2 className="text-xl font-semibold text-white mb-4">Últimos Pedidos</h2>
                 <div className="overflow-x-auto">
@@ -221,19 +236,17 @@ const Dashboard = ({ compras, onAddOrder }) => {
     );
 };
 
-
 export default function App() {
-    // ... (toda a lógica de autenticação e manipulação de dados que já tínhamos)
     const [gapi, setGapi] = useState(null);
     const [google, setGoogle] = useState(null);
     const [tokenClient, setTokenClient] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [compras, setCompras] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isInitializing, setIsInitializing] = useState(true);
     const [error, setError] = useState(null);
     const [isAddOrderModalOpen, setIsAddOrderModalOpen] = useState(false);
-    
-    // Autenticação e busca de dados (lógica existente)
+
     useEffect(() => {
         const script = document.createElement('script');
         script.src = 'https://apis.google.com/js/api.js';
@@ -251,7 +264,7 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        if (gapi && google && SPREADSHEET_CONFIG.clientId) {
+        if (gapi && google) {
             try {
                 const client = google.accounts.oauth2.initTokenClient({
                     client_id: SPREADSHEET_CONFIG.clientId,
@@ -262,12 +275,17 @@ export default function App() {
                             await gapi.client.load('sheets', 'v4');
                             setIsLoggedIn(true);
                             fetchSheetData();
+                        } else {
+                            setIsInitializing(false);
                         }
                     },
                 });
                 setTokenClient(client);
+                setIsInitializing(false);
             } catch (err) {
+                console.error("Erro ao inicializar cliente Google:", err);
                 setError("Falha ao inicializar o Google. Verifique o Client ID.");
+                setIsInitializing(false);
             }
         }
     }, [gapi, google]);
@@ -291,30 +309,34 @@ export default function App() {
             if (rows.length > 0) {
                 const header = rows[0].map(h => h.toLowerCase().trim());
                 const idColIndex = header.indexOf('id_unico');
-                if (idColIndex === -1) throw new Error('A coluna "ID_UNICO" não foi encontrada.');
+                if (idColIndex === -1) throw new Error('A coluna "ID_UNICO" não foi encontrada na planilha.');
 
-                const data = rows.slice(1).map((row, index) => ({
-                    rowIndex: index + 2,
-                    id: row[idColIndex],
-                    fullRow: row,
-                    nome: row[0] || '',                                    // Coluna A
-                    quantidade: parseInt(row[1] || '1', 10),              // Coluna B
-                    preco: parseFloat((row[2] || '0').toString().replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')) || 0, // Coluna C
-                    solicitante: row[4] || 'Não informado',                 // Coluna E
-                    fornecedor: row[5] || '',                               // Coluna F
-                    comprador: row[7] || 'Não informado',                   // Coluna H
-                    dataCompra: row[8] || null,                             // Coluna I
-                    status: row[10] || 'Orçamento',                         // Coluna K
-                })).filter(c => c.id && c.nome);
+                const data = rows.slice(1).map((row, index) => {
+                    if (!row || !row[idColIndex]) return null;
+                    return {
+                        rowIndex: index + 2,
+                        id: row[idColIndex],
+                        fullRow: row,
+                        nome: row[0] || '',
+                        quantidade: parseInt(row[1] || '1', 10),
+                        preco: parseFloat((row[2] || '0').toString().replace(/\./g, '').replace(',', '.')) || 0,
+                        solicitante: row[4] || 'N/A',
+                        fornecedor: row[5] || 'N/A',
+                        comprador: row[7] || 'N/A',
+                        dataCompra: row[8] || null,
+                        status: row[10] || 'Orçamento',
+                    };
+                }).filter(Boolean);
 
                 setCompras(data);
-            } else {
-                setError("Planilha conectada mas vazia.");
             }
         } catch (err) {
-            setError(`Erro ao carregar dados: ${err.message}`);
+            console.error("Erro detalhado ao buscar dados: ", err);
+            const errorMessage = err.result?.error?.message || err.message || 'Um erro desconhecido ocorreu.';
+            setError(`Erro ao carregar dados: ${errorMessage}`);
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     };
     
     const handleAddOrder = async (order) => {
@@ -322,15 +344,15 @@ export default function App() {
         const rowsToAdd = order.products.map(product => {
             const newId = `compra-${Date.now()}-${Math.random()}`;
             const newRow = Array(12).fill('');
-            newRow[0] = product.nome; // A
-            newRow[1] = product.quantidade; // B
-            newRow[2] = product.preco; // C
-            newRow[4] = order.solicitante; // E
-            newRow[5] = order.fornecedor; // F
-            newRow[7] = order.comprador; // H
-            newRow[8] = new Date().toLocaleDateString('pt-BR'); // I - Data da Compra
-            newRow[10] = 'Orçamento'; // K
-            newRow[11] = newId; // L
+            newRow[0] = product.nome;
+            newRow[1] = product.quantidade;
+            newRow[2] = product.preco;
+            newRow[4] = order.solicitante;
+            newRow[5] = order.fornecedor;
+            newRow[7] = order.comprador;
+            newRow[8] = new Date().toLocaleDateString('pt-BR');
+            newRow[10] = 'Orçamento';
+            newRow[11] = newId;
             return newRow;
         });
 
@@ -349,12 +371,20 @@ export default function App() {
         setIsLoading(false);
     };
 
-    if (isLoading) {
-        return <div className="bg-slate-900 min-h-screen flex items-center justify-center text-white">Carregando dados da planilha...</div>
+    if (isInitializing) {
+        return <div className="bg-slate-900 min-h-screen flex items-center justify-center text-white">Inicializando...</div>
     }
 
     if (!isLoggedIn) {
         return <LoginScreen onLogin={handleLogin} error={error} />;
+    }
+
+    if (isLoading) {
+        return <div className="bg-slate-900 min-h-screen flex items-center justify-center text-white">Carregando dados da planilha...</div>
+    }
+    
+    if (error) {
+        return <div className="bg-slate-900 min-h-screen flex items-center justify-center text-red-400">{error}</div>
     }
 
     return (
@@ -365,7 +395,7 @@ export default function App() {
     );
 }
 
-// Estes componentes auxiliares podem continuar no final do arquivo
+
 function LoginScreen({ onLogin, error }) {
     return (
         <div className="bg-slate-900 flex flex-col items-center justify-center min-h-screen text-center p-4">
@@ -374,7 +404,7 @@ function LoginScreen({ onLogin, error }) {
             <button onClick={onLogin} className="flex items-center justify-center gap-3 py-3 px-6 bg-blue-600 text-white font-semibold rounded-lg shadow-lg hover:bg-blue-700 transition-transform transform hover:scale-105">
                 <GoogleIcon /> Login com Google
             </button>
-            {error && <p className="text-red-500 dark:text-red-400 text-sm mt-4">{error}</p>}
+            {error && <p className="text-red-500 text-sm mt-4">{error}</p>}
         </div>
     );
 }
@@ -410,14 +440,11 @@ function AddOrderForm({ onCancel, onSubmit }) {
                     <button type="button" onClick={onCancel} className="text-slate-400 hover:text-slate-300">&times;</button>
                 </div>
                 <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                    {/* Cabeçalho */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div><label className="block text-sm font-medium text-slate-400 mb-1">Solicitante*</label><input type="text" name="solicitante" value={header.solicitante} onChange={handleHeaderChange} required className={inputStyle} /></div>
                         <div><label className="block text-sm font-medium text-slate-400 mb-1">Comprador</label><input type="text" name="comprador" value={header.comprador} onChange={handleHeaderChange} className={inputStyle} /></div>
                         <div><label className="block text-sm font-medium text-slate-400 mb-1">Fornecedor</label><input type="text" name="fornecedor" value={header.fornecedor} onChange={handleHeaderChange} className={inputStyle} /></div>
                     </div>
-
-                    {/* Produtos */}
                     <h4 className="text-lg font-semibold text-white pt-4 border-t border-slate-700 mt-4">Produtos</h4>
                     {products.map((product, index) => (
                         <div key={index} className="grid grid-cols-12 gap-2 items-center">
