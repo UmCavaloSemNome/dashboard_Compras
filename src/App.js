@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PurchaseChart from './components/PurchaseChart';
 
 // --- Ícones (SVG) ---
 const PlusCircleIcon = ({ className }) => (<svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>);
@@ -233,37 +234,40 @@ export default function App() {
                     </header>
                     {error && <div className="bg-yellow-100 dark:bg-yellow-900/20 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-300 p-4 mb-6 rounded-md" role="alert"><p className="font-bold">Aviso:</p><p>{error}</p></div>}
                     {isLoading ? <p className="text-center p-8 text-slate-500 dark:text-slate-400">Sincronizando com a planilha...</p> : (
-                        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="bg-slate-50 dark:bg-slate-700/50">
-                                    <tr>
-                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Produto</th>
-                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Fornecedor</th>
-                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Preço</th>
-                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Status</th>
-                                        <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                                    {compras.length > 0 ? (
-                                        compras.map(compra => (
-                                            <tr key={compra.id || compra.rowIndex} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200">
-                                                <td className="p-4 font-medium text-slate-900 dark:text-white">{compra.nome}</td>
-                                                <td className="p-4 text-slate-500 dark:text-slate-400">{compra.fornecedor}</td>
-                                                <td className="p-4 text-slate-500 dark:text-slate-400">{(compra.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
-                                                <td className="p-4 text-slate-500 dark:text-slate-400">{compra.status}</td>
-                                                <td className="p-4"><div className="flex justify-center gap-3">
-                                                    <button onClick={() => { setCurrentPurchase(compra); setIsEditModalOpen(true); }} className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 transition-colors" title="Editar"><PencilIcon className="h-5 w-5" /></button>
-                                                    <button onClick={() => { setCurrentPurchase(compra); setIsDeleteModalOpen(true); }} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors" title="Excluir"><TrashIcon className="h-5 w-5" /></button>
-                                                </div></td>
-                                            </tr>
-                                        ))
-                                    ) : (
-                                        <tr><td colSpan="5" className="text-center p-8 text-slate-500 dark:text-slate-400">Nenhum dado para exibir.</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                        <>
+                            <PurchaseChart data={compras} />
+                            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 overflow-x-auto mt-8">
+                                <table className="w-full text-left">
+                                    <thead className="bg-slate-50 dark:bg-slate-700/50">
+                                        <tr>
+                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Produto</th>
+                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Fornecedor</th>
+                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Preço</th>
+                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider">Status</th>
+                                            <th className="p-4 font-semibold text-sm text-slate-600 dark:text-slate-300 uppercase tracking-wider text-center">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                                        {compras.length > 0 ? (
+                                            compras.map(compra => (
+                                                <tr key={compra.id || compra.rowIndex} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors duration-200">
+                                                    <td className="p-4 font-medium text-slate-900 dark:text-white">{compra.nome}</td>
+                                                    <td className="p-4 text-slate-500 dark:text-slate-400">{compra.fornecedor}</td>
+                                                    <td className="p-4 text-slate-500 dark:text-slate-400">{(compra.preco || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+                                                    <td className="p-4 text-slate-500 dark:text-slate-400">{compra.status}</td>
+                                                    <td className="p-4"><div className="flex justify-center gap-3">
+                                                        <button onClick={() => { setCurrentPurchase(compra); setIsEditModalOpen(true); }} className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-400 transition-colors" title="Editar"><PencilIcon className="h-5 w-5" /></button>
+                                                        <button onClick={() => { setCurrentPurchase(compra); setIsDeleteModalOpen(true); }} className="text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors" title="Excluir"><TrashIcon className="h-5 w-5" /></button>
+                                                    </div></td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr><td colSpan="5" className="text-center p-8 text-slate-500 dark:text-slate-400">Nenhum dado para exibir.</td></tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </>
                     )}
                 </div>
             )}
